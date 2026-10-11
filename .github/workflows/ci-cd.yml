@@ -1,0 +1,78 @@
+name: CI/CD Pipeline - Audio Architecture System
+
+on:
+  push:
+    branches: [ "main", "master", "develop" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  test-backend:
+    name: Backend Unit Tests & Linting
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements-dev.txt
+
+      - name: Run Python Unit Tests
+        run: |
+          python -m unittest discover -s backend/tests -v
+
+  build-frontend:
+    name: Frontend Build & Asset Verification
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Frontend Dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Build React Application
+        run: |
+          cd frontend
+          npm run build
+
+  terraform-check:
+    name: Terraform Quality & Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup HashiCorp Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.7.0"
+
+      - name: Terraform Format Check
+        run: |
+          terraform -chdir=terraform fmt -check
+
+      - name: Terraform Init (Backend verification)
+        run: |
+          terraform -chdir=terraform init -backend=false
+
+      - name: Terraform Validation
+        run: |
+          terraform -chdir=terraform validate

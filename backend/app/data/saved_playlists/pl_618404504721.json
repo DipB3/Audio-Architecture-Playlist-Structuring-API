@@ -1,0 +1,290 @@
+{
+  "playlist_id": "pl_618404504721",
+  "name": "Integration Test Playlist",
+  "created_at": "2026-10-11T19:54:11.025577+00:00",
+  "target_duration_minutes": 20.0,
+  "actual_duration_seconds": 1204,
+  "actual_duration_formatted": "20m 04s",
+  "track_count": 6,
+  "genres_used": [
+    "Hip-Hop",
+    "Indie Pop"
+  ],
+  "curve_type": "pomodoro_peak",
+  "tracks": [
+    {
+      "id": "trk_ip_007",
+      "title": "Morning Coffee Waltz",
+      "artist": "Sundial Avenue",
+      "genre": "Indie Pop",
+      "duration_seconds": 218,
+      "bpm": 92.0,
+      "musical_key": "D Major",
+      "camelot_code": "10B",
+      "energy": 0.42,
+      "valence": 0.62,
+      "acousticness": 0.58,
+      "danceability": 0.59,
+      "notes": [
+        "D4",
+        "F#4",
+        "A4",
+        "D5",
+        "B4"
+      ]
+    },
+    {
+      "id": "trk_hh_007",
+      "title": "Low End Theory 2.0",
+      "artist": "Sub-Frequency Unit",
+      "genre": "Hip-Hop",
+      "duration_seconds": 195,
+      "bpm": 94.0,
+      "musical_key": "B Minor",
+      "camelot_code": "10A",
+      "energy": 0.78,
+      "valence": 0.59,
+      "acousticness": 0.18,
+      "danceability": 0.86,
+      "notes": [
+        "B2",
+        "D3",
+        "F#3",
+        "A3",
+        "B3"
+      ]
+    },
+    {
+      "id": "trk_hh_005",
+      "title": "Heavy Rhodes Hustle",
+      "artist": "Rhyme & Rhythm Lab",
+      "genre": "Hip-Hop",
+      "duration_seconds": 215,
+      "bpm": 92.0,
+      "musical_key": "E Minor",
+      "camelot_code": "9A",
+      "energy": 0.72,
+      "valence": 0.62,
+      "acousticness": 0.22,
+      "danceability": 0.84,
+      "notes": [
+        "E3",
+        "G3",
+        "B3",
+        "D4",
+        "E4"
+      ]
+    },
+    {
+      "id": "trk_hh_006",
+      "title": "Alleyway Boom Bap",
+      "artist": "Tape Loop Syndicate",
+      "genre": "Hip-Hop",
+      "duration_seconds": 182,
+      "bpm": 90.0,
+      "musical_key": "G Major",
+      "camelot_code": "9B",
+      "energy": 0.68,
+      "valence": 0.68,
+      "acousticness": 0.25,
+      "danceability": 0.8,
+      "notes": [
+        "G3",
+        "B3",
+        "D4",
+        "F#4",
+        "G4"
+      ]
+    },
+    {
+      "id": "trk_hh_004",
+      "title": "Highline Skyline",
+      "artist": "Rhyme & Rhythm Lab",
+      "genre": "Hip-Hop",
+      "duration_seconds": 204,
+      "bpm": 88.0,
+      "musical_key": "F Major",
+      "camelot_code": "7B",
+      "energy": 0.65,
+      "valence": 0.7,
+      "acousticness": 0.28,
+      "danceability": 0.82,
+      "notes": [
+        "F3",
+        "A3",
+        "C4",
+        "D4",
+        "F4"
+      ]
+    },
+    {
+      "id": "trk_hh_002",
+      "title": "Cobblestone Grooves",
+      "artist": "Soul Dialect",
+      "genre": "Hip-Hop",
+      "duration_seconds": 190,
+      "bpm": 82.0,
+      "musical_key": "C Major",
+      "camelot_code": "8B",
+      "energy": 0.52,
+      "valence": 0.65,
+      "acousticness": 0.38,
+      "danceability": 0.78,
+      "notes": [
+        "C4",
+        "E4",
+        "G4",
+        "B4",
+        "C5"
+      ]
+    }
+  ],
+  "transitions": [
+    {
+      "from_track_id": "trk_ip_007",
+      "to_track_id": "trk_hh_007",
+      "bpm_delta": 2.0,
+      "camelot_distance": 0,
+      "camelot_compatible": true,
+      "genre_transition": "Indie Pop -> Hip-Hop",
+      "transition_score": 0.921
+    },
+    {
+      "from_track_id": "trk_hh_007",
+      "to_track_id": "trk_hh_005",
+      "bpm_delta": 2.0,
+      "camelot_distance": 1,
+      "camelot_compatible": true,
+      "genre_transition": "Hip-Hop -> Hip-Hop",
+      "transition_score": 0.942
+    },
+    {
+      "from_track_id": "trk_hh_005",
+      "to_track_id": "trk_hh_006",
+      "bpm_delta": 2.0,
+      "camelot_distance": 0,
+      "camelot_compatible": true,
+      "genre_transition": "Hip-Hop -> Hip-Hop",
+      "transition_score": 0.966
+    },
+    {
+      "from_track_id": "trk_hh_006",
+      "to_track_id": "trk_hh_004",
+      "bpm_delta": 2.0,
+      "camelot_distance": 2,
+      "camelot_compatible": true,
+      "genre_transition": "Hip-Hop -> Hip-Hop",
+      "transition_score": 0.872
+    },
+    {
+      "from_track_id": "trk_hh_004",
+      "to_track_id": "trk_hh_002",
+      "bpm_delta": 6.0,
+      "camelot_distance": 1,
+      "camelot_compatible": true,
+      "genre_transition": "Hip-Hop -> Hip-Hop",
+      "transition_score": 0.9
+    }
+  ],
+  "energy_trajectory": [
+    {
+      "index": 1,
+      "time_seconds": 0,
+      "time_formatted": "00m 00s",
+      "normalized_time": 0.091,
+      "target_energy": 0.418,
+      "actual_energy": 0.42,
+      "energy_delta": 0.002,
+      "track_id": "trk_ip_007",
+      "track_title": "Morning Coffee Waltz",
+      "artist": "Sundial Avenue",
+      "genre": "Indie Pop",
+      "bpm": 92.0,
+      "camelot_code": "10B"
+    },
+    {
+      "index": 2,
+      "time_seconds": 218,
+      "time_formatted": "03m 38s",
+      "normalized_time": 0.262,
+      "target_energy": 0.758,
+      "actual_energy": 0.78,
+      "energy_delta": 0.022,
+      "track_id": "trk_hh_007",
+      "track_title": "Low End Theory 2.0",
+      "artist": "Sub-Frequency Unit",
+      "genre": "Hip-Hop",
+      "bpm": 94.0,
+      "camelot_code": "10A"
+    },
+    {
+      "index": 3,
+      "time_seconds": 413,
+      "time_formatted": "06m 53s",
+      "normalized_time": 0.432,
+      "target_energy": 0.833,
+      "actual_energy": 0.72,
+      "energy_delta": -0.113,
+      "track_id": "trk_hh_005",
+      "track_title": "Heavy Rhodes Hustle",
+      "artist": "Rhyme & Rhythm Lab",
+      "genre": "Hip-Hop",
+      "bpm": 92.0,
+      "camelot_code": "9A"
+    },
+    {
+      "index": 4,
+      "time_seconds": 628,
+      "time_formatted": "10m 28s",
+      "normalized_time": 0.597,
+      "target_energy": 0.825,
+      "actual_energy": 0.68,
+      "energy_delta": -0.145,
+      "track_id": "trk_hh_006",
+      "track_title": "Alleyway Boom Bap",
+      "artist": "Tape Loop Syndicate",
+      "genre": "Hip-Hop",
+      "bpm": 90.0,
+      "camelot_code": "9B"
+    },
+    {
+      "index": 5,
+      "time_seconds": 810,
+      "time_formatted": "13m 30s",
+      "normalized_time": 0.757,
+      "target_energy": 0.746,
+      "actual_energy": 0.65,
+      "energy_delta": -0.096,
+      "track_id": "trk_hh_004",
+      "track_title": "Highline Skyline",
+      "artist": "Rhyme & Rhythm Lab",
+      "genre": "Hip-Hop",
+      "bpm": 88.0,
+      "camelot_code": "7B"
+    },
+    {
+      "index": 6,
+      "time_seconds": 1014,
+      "time_formatted": "16m 54s",
+      "normalized_time": 0.921,
+      "target_energy": 0.402,
+      "actual_energy": 0.52,
+      "energy_delta": 0.118,
+      "track_id": "trk_hh_002",
+      "track_title": "Cobblestone Grooves",
+      "artist": "Soul Dialect",
+      "genre": "Hip-Hop",
+      "bpm": 82.0,
+      "camelot_code": "8B"
+    }
+  ],
+  "metrics": {
+    "overall_fit_score": 0.925,
+    "avg_energy_error": 0.083,
+    "tempo_smoothness_score": 0.965,
+    "harmonic_compatibility_rate": 100.0,
+    "genre_diversity_count": 2,
+    "duration_accuracy_percent": 99.67
+  },
+  "user_id": "guest_user"
+}

@@ -1,0 +1,48 @@
+#EXTM3U
+#PLAYLIST:Integration Test Playlist
+#CURVE_TYPE:pomodoro_peak
+#TARGET_DURATION:20.0m
+#ACTUAL_DURATION:20m 04s
+#OVERALL_FIT_SCORE:0.925
+
+#EXTINF:218,Sundial Avenue - Morning Coffee Waltz
+#EXT-X-BPM:92.0
+#EXT-X-KEY:10B (D Major)
+#EXT-X-ENERGY:0.42
+#EXT-X-GENRE:Indie Pop
+tracks/trk_ip_007.mp3
+
+#EXTINF:195,Sub-Frequency Unit - Low End Theory 2.0
+#EXT-X-BPM:94.0
+#EXT-X-KEY:10A (B Minor)
+#EXT-X-ENERGY:0.78
+#EXT-X-GENRE:Hip-Hop
+tracks/trk_hh_007.mp3
+
+#EXTINF:215,Rhyme & Rhythm Lab - Heavy Rhodes Hustle
+#EXT-X-BPM:92.0
+#EXT-X-KEY:9A (E Minor)
+#EXT-X-ENERGY:0.72
+#EXT-X-GENRE:Hip-Hop
+tracks/trk_hh_005.mp3
+
+#EXTINF:182,Tape Loop Syndicate - Alleyway Boom Bap
+#EXT-X-BPM:90.0
+#EXT-X-KEY:9B (G Major)
+#EXT-X-ENERGY:0.68
+#EXT-X-GENRE:Hip-Hop
+tracks/trk_hh_006.mp3
+
+#EXTINF:204,Rhyme & Rhythm Lab - Highline Skyline
+#EXT-X-BPM:88.0
+#EXT-X-KEY:7B (F Major)
+#EXT-X-ENERGY:0.65
+#EXT-X-GENRE:Hip-Hop
+tracks/trk_hh_004.mp3
+
+#EXTINF:190,Soul Dialect - Cobblestone Grooves
+#EXT-X-BPM:82.0
+#EXT-X-KEY:8B (C Major)
+#EXT-X-ENERGY:0.52
+#EXT-X-GENRE:Hip-Hop
+tracks/trk_hh_002.mp3
