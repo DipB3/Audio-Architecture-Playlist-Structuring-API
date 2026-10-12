@@ -1,6 +1,8 @@
 terraform {
   required_version = ">= 1.5.0"
 
+  backend "s3" {}
+
   required_providers {
     aws = {
       source  = "hashicorp/aws"
@@ -37,7 +39,7 @@ resource "random_id" "suffix" {
 }
 
 locals {
-  name_prefix  = "${var.project_name}-${var.environment}"
+  name_prefix         = "${var.project_name}-${var.environment}"
   dynamodb_table_name = "${local.name_prefix}-architectures"
   s3_bucket_name      = "${local.name_prefix}-assets-${random_id.suffix.hex}"
 }

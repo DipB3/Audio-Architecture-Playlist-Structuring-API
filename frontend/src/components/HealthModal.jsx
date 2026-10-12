@@ -4,15 +4,12 @@ import { fetchHealth } from '../services/api';
 
 export default function HealthModal({ isOpen, onClose }) {
   const [healthData, setHealthData] = useState(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (isOpen) {
-      setLoading(true);
       fetchHealth()
         .then((data) => setHealthData(data))
-        .catch((err) => console.error(err))
-        .finally(() => setLoading(false));
+        .catch((err) => console.error(err));
     }
   }, [isOpen]);
 

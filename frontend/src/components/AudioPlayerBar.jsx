@@ -1,7 +1,7 @@
 import React from 'react';
-import { Play, Square, Volume2, FastForward, Music } from 'lucide-react';
+import { Square, Volume2 } from 'lucide-react';
 
-export default function AudioPlayerBar({ activeTrack, isPlaying, onStop, onPlayContinuous }) {
+export default function AudioPlayerBar({ activeTrack, onStop }) {
   if (!activeTrack) return null;
 
   return (

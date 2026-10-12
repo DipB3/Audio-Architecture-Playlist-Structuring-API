@@ -45,7 +45,7 @@ class AudioSynthesizer {
       try {
         node.stop();
         node.disconnect();
-      } catch (e) {
+      } catch {
         // already stopped
       }
     });
@@ -160,6 +160,7 @@ class AudioSynthesizer {
           playNext();
         } else {
           this.stop();
+          if (this.onTrackChangeCallback) this.onTrackChangeCallback(null);
         }
       });
     };

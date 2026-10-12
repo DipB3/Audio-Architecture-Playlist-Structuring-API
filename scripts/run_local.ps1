@@ -5,9 +5,12 @@ Write-Host " Team 6 | 5th Semester | Batch B2 | Academic Year 2026-27" -Foregrou
 Write-Host "=================================================================" -ForegroundColor Cyan
 
 # 1. Start Python Local API Gateway / Lambda Server in background
+$projectRoot = Split-Path -Parent $PSScriptRoot
+Set-Location -LiteralPath $projectRoot
 Write-Host "[1/2] Starting local Python API Gateway server on http://localhost:8000..." -ForegroundColor Yellow
 $backendJob = Start-Job -ScriptBlock {
     Set-Location -Path $using:PWD
+    $env:LOCAL_ONLY = '1'
     python backend/app/local_server.py 8000
 }
 

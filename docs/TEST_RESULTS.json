@@ -1,0 +1,628 @@
+{
+  "date": "2026-10-12",
+  "environment": "local",
+  "aws_deployment_verified": false,
+  "http_smoke": {
+    "status": "passed",
+    "track_count": 9,
+    "metrics": {
+      "overall_fit_score": 0.921,
+      "avg_energy_error": 0.087,
+      "tempo_smoothness_score": 0.83,
+      "harmonic_compatibility_rate": 100.0,
+      "genre_diversity_count": 3,
+      "duration_accuracy_percent": 99.17
+    },
+    "diagnostics": {
+      "engine": "duration-aware-beam-v2",
+      "execution_ms": 57.88,
+      "candidate_evaluations": 2076,
+      "eligible_track_count": 24,
+      "duration_error_seconds": -15.0,
+      "repeat_count": 0,
+      "crossfade_seconds": 8.0,
+      "warnings": [],
+      "custom_points": [],
+      "target_samples": [
+        {
+          "time_fraction": 0.0,
+          "energy": 0.25
+        },
+        {
+          "time_fraction": 0.01,
+          "energy": 0.2596
+        },
+        {
+          "time_fraction": 0.02,
+          "energy": 0.2736
+        },
+        {
+          "time_fraction": 0.03,
+          "energy": 0.2899
+        },
+        {
+          "time_fraction": 0.04,
+          "energy": 0.308
+        },
+        {
+          "time_fraction": 0.05,
+          "energy": 0.3275
+        },
+        {
+          "time_fraction": 0.06,
+          "energy": 0.3483
+        },
+        {
+          "time_fraction": 0.07,
+          "energy": 0.3701
+        },
+        {
+          "time_fraction": 0.08,
+          "energy": 0.3928
+        },
+        {
+          "time_fraction": 0.09,
+          "energy": 0.4164
+        },
+        {
+          "time_fraction": 0.1,
+          "energy": 0.4409
+        },
+        {
+          "time_fraction": 0.11,
+          "energy": 0.4661
+        },
+        {
+          "time_fraction": 0.12,
+          "energy": 0.4919
+        },
+        {
+          "time_fraction": 0.13,
+          "energy": 0.5185
+        },
+        {
+          "time_fraction": 0.14,
+          "energy": 0.5456
+        },
+        {
+          "time_fraction": 0.15,
+          "energy": 0.5734
+        },
+        {
+          "time_fraction": 0.16,
+          "energy": 0.6017
+        },
+        {
+          "time_fraction": 0.17,
+          "energy": 0.6305
+        },
+        {
+          "time_fraction": 0.18,
+          "energy": 0.6598
+        },
+        {
+          "time_fraction": 0.19,
+          "energy": 0.6897
+        },
+        {
+          "time_fraction": 0.2,
+          "energy": 0.72
+        },
+        {
+          "time_fraction": 0.21,
+          "energy": 0.7263
+        },
+        {
+          "time_fraction": 0.22,
+          "energy": 0.7325
+        },
+        {
+          "time_fraction": 0.23,
+          "energy": 0.7388
+        },
+        {
+          "time_fraction": 0.24,
+          "energy": 0.7449
+        },
+        {
+          "time_fraction": 0.25,
+          "energy": 0.7511
+        },
+        {
+          "time_fraction": 0.26,
+          "energy": 0.7571
+        },
+        {
+          "time_fraction": 0.27,
+          "energy": 0.763
+        },
+        {
+          "time_fraction": 0.28,
+          "energy": 0.7688
+        },
+        {
+          "time_fraction": 0.29,
+          "energy": 0.7745
+        },
+        {
+          "time_fraction": 0.3,
+          "energy": 0.78
+        },
+        {
+          "time_fraction": 0.31,
+          "energy": 0.7854
+        },
+        {
+          "time_fraction": 0.32,
+          "energy": 0.7905
+        },
+        {
+          "time_fraction": 0.33,
+          "energy": 0.7955
+        },
+        {
+          "time_fraction": 0.34,
+          "energy": 0.8003
+        },
+        {
+          "time_fraction": 0.35,
+          "energy": 0.8049
+        },
+        {
+          "time_fraction": 0.36,
+          "energy": 0.8092
+        },
+        {
+          "time_fraction": 0.37,
+          "energy": 0.8133
+        },
+        {
+          "time_fraction": 0.38,
+          "energy": 0.8171
+        },
+        {
+          "time_fraction": 0.39,
+          "energy": 0.8206
+        },
+        {
+          "time_fraction": 0.4,
+          "energy": 0.8239
+        },
+        {
+          "time_fraction": 0.41,
+          "energy": 0.8269
+        },
+        {
+          "time_fraction": 0.42,
+          "energy": 0.8296
+        },
+        {
+          "time_fraction": 0.43,
+          "energy": 0.832
+        },
+        {
+          "time_fraction": 0.44,
+          "energy": 0.8341
+        },
+        {
+          "time_fraction": 0.45,
+          "energy": 0.8359
+        },
+        {
+          "time_fraction": 0.46,
+          "energy": 0.8374
+        },
+        {
+          "time_fraction": 0.47,
+          "energy": 0.8385
+        },
+        {
+          "time_fraction": 0.48,
+          "energy": 0.8393
+        },
+        {
+          "time_fraction": 0.49,
+          "energy": 0.8398
+        },
+        {
+          "time_fraction": 0.5,
+          "energy": 0.84
+        },
+        {
+          "time_fraction": 0.51,
+          "energy": 0.8398
+        },
+        {
+          "time_fraction": 0.52,
+          "energy": 0.8393
+        },
+        {
+          "time_fraction": 0.53,
+          "energy": 0.8385
+        },
+        {
+          "time_fraction": 0.54,
+          "energy": 0.8374
+        },
+        {
+          "time_fraction": 0.55,
+          "energy": 0.8359
+        },
+        {
+          "time_fraction": 0.56,
+          "energy": 0.8341
+        },
+        {
+          "time_fraction": 0.57,
+          "energy": 0.832
+        },
+        {
+          "time_fraction": 0.58,
+          "energy": 0.8296
+        },
+        {
+          "time_fraction": 0.59,
+          "energy": 0.8269
+        },
+        {
+          "time_fraction": 0.6,
+          "energy": 0.8239
+        },
+        {
+          "time_fraction": 0.61,
+          "energy": 0.8206
+        },
+        {
+          "time_fraction": 0.62,
+          "energy": 0.8171
+        },
+        {
+          "time_fraction": 0.63,
+          "energy": 0.8133
+        },
+        {
+          "time_fraction": 0.64,
+          "energy": 0.8092
+        },
+        {
+          "time_fraction": 0.65,
+          "energy": 0.8049
+        },
+        {
+          "time_fraction": 0.66,
+          "energy": 0.8003
+        },
+        {
+          "time_fraction": 0.67,
+          "energy": 0.7955
+        },
+        {
+          "time_fraction": 0.68,
+          "energy": 0.7905
+        },
+        {
+          "time_fraction": 0.69,
+          "energy": 0.7854
+        },
+        {
+          "time_fraction": 0.7,
+          "energy": 0.78
+        },
+        {
+          "time_fraction": 0.71,
+          "energy": 0.7745
+        },
+        {
+          "time_fraction": 0.72,
+          "energy": 0.7688
+        },
+        {
+          "time_fraction": 0.73,
+          "energy": 0.763
+        },
+        {
+          "time_fraction": 0.74,
+          "energy": 0.7571
+        },
+        {
+          "time_fraction": 0.75,
+          "energy": 0.7511
+        },
+        {
+          "time_fraction": 0.76,
+          "energy": 0.7449
+        },
+        {
+          "time_fraction": 0.77,
+          "energy": 0.7388
+        },
+        {
+          "time_fraction": 0.78,
+          "energy": 0.7325
+        },
+        {
+          "time_fraction": 0.79,
+          "energy": 0.7263
+        },
+        {
+          "time_fraction": 0.8,
+          "energy": 0.72
+        },
+        {
+          "time_fraction": 0.81,
+          "energy": 0.6863
+        },
+        {
+          "time_fraction": 0.82,
+          "energy": 0.6571
+        },
+        {
+          "time_fraction": 0.83,
+          "energy": 0.6293
+        },
+        {
+          "time_fraction": 0.84,
+          "energy": 0.6025
+        },
+        {
+          "time_fraction": 0.85,
+          "energy": 0.5764
+        },
+        {
+          "time_fraction": 0.86,
+          "energy": 0.5508
+        },
+        {
+          "time_fraction": 0.87,
+          "energy": 0.5256
+        },
+        {
+          "time_fraction": 0.88,
+          "energy": 0.5008
+        },
+        {
+          "time_fraction": 0.89,
+          "energy": 0.4763
+        },
+        {
+          "time_fraction": 0.9,
+          "energy": 0.4521
+        },
+        {
+          "time_fraction": 0.91,
+          "energy": 0.4281
+        },
+        {
+          "time_fraction": 0.92,
+          "energy": 0.4043
+        },
+        {
+          "time_fraction": 0.93,
+          "energy": 0.3807
+        },
+        {
+          "time_fraction": 0.94,
+          "energy": 0.3573
+        },
+        {
+          "time_fraction": 0.95,
+          "energy": 0.3341
+        },
+        {
+          "time_fraction": 0.96,
+          "energy": 0.311
+        },
+        {
+          "time_fraction": 0.97,
+          "energy": 0.288
+        },
+        {
+          "time_fraction": 0.98,
+          "energy": 0.2652
+        },
+        {
+          "time_fraction": 0.99,
+          "energy": 0.2426
+        },
+        {
+          "time_fraction": 1.0,
+          "energy": 0.22
+        }
+      ]
+    }
+  },
+  "benchmark": [
+    {
+      "duration_minutes": 20,
+      "curve": "pomodoro_peak",
+      "original": {
+        "execution_ms": 3.71,
+        "duration_error_seconds": 8,
+        "harmonic_percent": 100.0,
+        "genre_count": 3
+      },
+      "improved": {
+        "execution_ms": 44.05,
+        "duration_error_seconds": 8,
+        "harmonic_percent": 100.0,
+        "genre_count": 3
+      }
+    },
+    {
+      "duration_minutes": 20,
+      "curve": "linear_ascent",
+      "original": {
+        "execution_ms": 2.99,
+        "duration_error_seconds": 2,
+        "harmonic_percent": 100.0,
+        "genre_count": 2
+      },
+      "improved": {
+        "execution_ms": 34.23,
+        "duration_error_seconds": 2,
+        "harmonic_percent": 100.0,
+        "genre_count": 2
+      }
+    },
+    {
+      "duration_minutes": 20,
+      "curve": "wave_interval",
+      "original": {
+        "execution_ms": 3.46,
+        "duration_error_seconds": 43,
+        "harmonic_percent": 100.0,
+        "genre_count": 3
+      },
+      "improved": {
+        "execution_ms": 42.8,
+        "duration_error_seconds": 2,
+        "harmonic_percent": 100.0,
+        "genre_count": 3
+      }
+    },
+    {
+      "duration_minutes": 45,
+      "curve": "pomodoro_peak",
+      "original": {
+        "execution_ms": 6.81,
+        "duration_error_seconds": 21,
+        "harmonic_percent": 100.0,
+        "genre_count": 3
+      },
+      "improved": {
+        "execution_ms": 59.58,
+        "duration_error_seconds": 4,
+        "harmonic_percent": 100.0,
+        "genre_count": 3
+      }
+    },
+    {
+      "duration_minutes": 45,
+      "curve": "linear_ascent",
+      "original": {
+        "execution_ms": 6.31,
+        "duration_error_seconds": 39,
+        "harmonic_percent": 100.0,
+        "genre_count": 3
+      },
+      "improved": {
+        "execution_ms": 44.28,
+        "duration_error_seconds": 1,
+        "harmonic_percent": 100.0,
+        "genre_count": 3
+      }
+    },
+    {
+      "duration_minutes": 45,
+      "curve": "wave_interval",
+      "original": {
+        "execution_ms": 5.89,
+        "duration_error_seconds": 12,
+        "harmonic_percent": 100.0,
+        "genre_count": 3
+      },
+      "improved": {
+        "execution_ms": 63.03,
+        "duration_error_seconds": 25,
+        "harmonic_percent": 100.0,
+        "genre_count": 3
+      }
+    },
+    {
+      "duration_minutes": 90,
+      "curve": "pomodoro_peak",
+      "original": {
+        "execution_ms": 11.2,
+        "duration_error_seconds": 81,
+        "harmonic_percent": 96.0,
+        "genre_count": 3
+      },
+      "improved": {
+        "execution_ms": 158.8,
+        "duration_error_seconds": 4,
+        "harmonic_percent": 96.0,
+        "genre_count": 3
+      }
+    },
+    {
+      "duration_minutes": 90,
+      "curve": "linear_ascent",
+      "original": {
+        "execution_ms": 15.07,
+        "duration_error_seconds": 3,
+        "harmonic_percent": 96.0,
+        "genre_count": 3
+      },
+      "improved": {
+        "execution_ms": 129.8,
+        "duration_error_seconds": 8,
+        "harmonic_percent": 96.0,
+        "genre_count": 3
+      }
+    },
+    {
+      "duration_minutes": 90,
+      "curve": "wave_interval",
+      "original": {
+        "execution_ms": 13.42,
+        "duration_error_seconds": 4,
+        "harmonic_percent": 96.0,
+        "genre_count": 3
+      },
+      "improved": {
+        "execution_ms": 138.46,
+        "duration_error_seconds": 4,
+        "harmonic_percent": 96.0,
+        "genre_count": 3
+      }
+    },
+    {
+      "duration_minutes": 180,
+      "curve": "pomodoro_peak",
+      "original": {
+        "execution_ms": 25.66,
+        "duration_error_seconds": 5,
+        "harmonic_percent": 100.0,
+        "genre_count": 3
+      },
+      "improved": {
+        "execution_ms": 375.21,
+        "duration_error_seconds": 8,
+        "harmonic_percent": 100.0,
+        "genre_count": 3
+      }
+    },
+    {
+      "duration_minutes": 180,
+      "curve": "linear_ascent",
+      "original": {
+        "execution_ms": 34.03,
+        "duration_error_seconds": 91,
+        "harmonic_percent": 100.0,
+        "genre_count": 3
+      },
+      "improved": {
+        "execution_ms": 354.67,
+        "duration_error_seconds": 5,
+        "harmonic_percent": 100.0,
+        "genre_count": 3
+      }
+    },
+    {
+      "duration_minutes": 180,
+      "curve": "wave_interval",
+      "original": {
+        "execution_ms": 27.02,
+        "duration_error_seconds": 40,
+        "harmonic_percent": 100.0,
+        "genre_count": 3
+      },
+      "improved": {
+        "execution_ms": 463.64,
+        "duration_error_seconds": 9,
+        "harmonic_percent": 98.04,
+        "genre_count": 3
+      }
+    }
+  ]
+}

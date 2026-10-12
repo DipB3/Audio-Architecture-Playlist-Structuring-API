@@ -29,7 +29,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "audio_assets_sse"
   }
 }
 
-# Lifecycle rule to prune old export bundles after 30 days to guarantee zero-cost compliance
+# Lifecycle rule to prune old export bundles after 30 days and limit storage costs
 resource "aws_s3_bucket_lifecycle_configuration" "audio_assets_lifecycle" {
   bucket = aws_s3_bucket.audio_assets.id
 

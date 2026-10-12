@@ -12,10 +12,11 @@ import HistoryModal from './components/HistoryModal';
 import HealthModal from './components/HealthModal';
 import DocsModal from './components/DocsModal';
 import AudioPlayerBar from './components/AudioPlayerBar';
+import SessionControls from './components/SessionControls';
 
-import { fetchGenres, fetchPresets, generatePlaylist } from './services/api';
+import { fetchGenres, fetchPresets, fetchPlaylist, generatePlaylist } from './services/api';
 import { audioSynth } from './services/audioSynthesizer';
-import { Sparkles, Play, Download, RefreshCw, Cpu, Layers } from 'lucide-react';
+import { Sparkles, Play, Download, RefreshCw } from 'lucide-react';
 
 export default function App() {
   const [genres, setGenres] = useState([]);
@@ -45,11 +46,16 @@ export default function App() {
 
   // Generated Playlist State
   const [playlist, setPlaylist] = useState(null);
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(true);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [sessionName, setSessionName] = useState('');
+  const [options, setOptions] = useState({
+    min_bpm: 40, max_bpm: 220, allow_repeats: true,
+    crossfade_seconds: 0, diversity_strength: .25, excluded_track_ids: []
+  });
 
   // Audio Playback State
   const [activeTrack, setActiveTrack] = useState(null);
-  const [isPlayingSequence, setIsPlayingSequence] = useState(false);
 
   // Modals
   const [isExportOpen, setIsExportOpen] = useState(false);
@@ -59,20 +65,38 @@ export default function App() {
 
   // Initial Load
   useEffect(() => {
-    Promise.all([fetchGenres(), fetchPresets()]).then(([gList, pList]) => {
+    let active = true;
+    Promise.all([
+      fetchGenres(),
+      fetchPresets(),
+      generatePlaylist({
+        target_duration_minutes: 45,
+        selected_genres: ["Contemporary Classical Piano", "Indie Pop", "Hip-Hop"],
+        curve_type: "pomodoro_peak",
+        custom_points: [],
+        energy_weight: 0.40,
+        tempo_weight: 0.25,
+        harmonic_weight: 0.20,
+        genre_weight: 0.15
+      })
+    ]).then(([gList, pList, initialPlaylist]) => {
+      if (!active) return;
       setGenres(gList);
       setPresets(pList);
-    });
-
-    // Auto-generate initial architecture for instant preview
-    handleGenerate();
+      setPlaylist(initialPlaylist);
+    }).catch(err => {
+      console.error("Initial application load failed:", err);
+      if (active) setErrorMessage(err.message || "The application could not be initialized.");
+    })
+      .finally(() => active && setIsGenerating(false));
+    return () => { active = false; };
   }, []);
 
   const handleGenerate = async () => {
     setIsGenerating(true);
+    setErrorMessage('');
     audioSynth.stop();
     setActiveTrack(null);
-    setIsPlayingSequence(false);
 
     try {
       const result = await generatePlaylist({
@@ -80,11 +104,14 @@ export default function App() {
         selected_genres: selectedGenres,
         curve_type: selectedCurve,
         custom_points: selectedCurve === 'custom' ? customPoints : [],
-        ...weights
+        ...weights,
+        ...options,
+        ...(sessionName.trim() ? { name: sessionName.trim() } : {})
       });
       setPlaylist(result);
     } catch (err) {
       console.error("Failed to generate playlist:", err);
+      setErrorMessage(err.message || "Playlist generation failed. Check the selected parameters and try again.");
     } finally {
       setIsGenerating(false);
     }
@@ -116,7 +143,6 @@ export default function App() {
 
   const handlePlayContinuous = () => {
     if (!playlist || !playlist.tracks || playlist.tracks.length === 0) return;
-    setIsPlayingSequence(true);
     audioSynth.playSequence(playlist.tracks, 0, (currentTrack) => {
       setActiveTrack(currentTrack);
     });
@@ -125,7 +151,6 @@ export default function App() {
   const handleStopAudio = () => {
     audioSynth.stop();
     setActiveTrack(null);
-    setIsPlayingSequence(false);
   };
 
   return (
@@ -165,6 +190,12 @@ export default function App() {
             </button>
           </div>
 
+          {errorMessage && (
+            <div className="rounded-xl border border-red-700/60 bg-red-950/50 px-4 py-3 text-xs text-red-200" role="alert">
+              {errorMessage}
+            </div>
+          )}
+
           {/* 1. Energy Curves */}
           <EnergyCurveSelector
             presets={presets}
@@ -199,6 +230,8 @@ export default function App() {
             weights={weights}
             onChangeWeights={(w) => setWeights(w)}
           />
+          <SessionControls options={options} onChange={setOptions} playlist={playlist}
+            name={sessionName} onNameChange={setSessionName} />
         </section>
 
         {/* Action Bar for Generated Output */}
@@ -237,6 +270,14 @@ export default function App() {
         )}
 
         {/* Module 2: Visualization of Audio Architecture Trajectory */}
+        {playlist && <div className="text-xs text-slate-300 space-y-2" role="status">
+          <p>{playlist.diagnostics?.engine === 'browser-greedy' ? 'Offline browser generation' : 'API playlist generation'}
+            {playlist.diagnostics?.execution_ms != null && ` · ${playlist.diagnostics.execution_ms} ms · ${playlist.diagnostics.eligible_track_count} eligible tracks`}
+          </p>
+          <p className="text-slate-400">Audio previews are synthesized motifs. Playlist exports refer to audio files you supply.</p>
+          {(playlist.diagnostics?.warnings || []).map(warning =>
+            <p key={warning} className="text-amber-300">{warning}</p>)}
+        </div>}
         {playlist && (
           <EnergyCurveVisualizer
             playlist={playlist}
@@ -263,9 +304,7 @@ export default function App() {
       {/* Persistent Audio Synthesizer Player Bar */}
       <AudioPlayerBar
         activeTrack={activeTrack}
-        isPlaying={!!activeTrack}
         onStop={handleStopAudio}
-        onPlayContinuous={handlePlayContinuous}
       />
 
       {/* Export Modal */}
@@ -281,12 +320,13 @@ export default function App() {
         isOpen={isHistoryOpen}
         onClose={() => setIsHistoryOpen(false)}
         onSelectHistoryPlaylist={(plId) => {
-          // fetch and display playlist
-          generatePlaylist({
-            target_duration_minutes: duration,
-            selected_genres: selectedGenres,
-            curve_type: selectedCurve
-          }).then(res => setPlaylist(res));
+          setErrorMessage('');
+          fetchPlaylist(plId)
+            .then(res => setPlaylist(res))
+            .catch(err => {
+              console.error("Failed to load saved playlist:", err);
+              setErrorMessage(err.message || "The saved playlist could not be loaded.");
+            });
         }}
       />
 

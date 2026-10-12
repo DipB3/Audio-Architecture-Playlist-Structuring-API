@@ -1,6 +1,10 @@
 """Unit tests for AWS Lambda handler and API Gateway proxy routing."""
 import unittest
 import json
+import os
+import subprocess
+import sys
+from pathlib import Path
 from backend.app.lambda_handler import handler
 
 class TestLambdaHandler(unittest.TestCase):
@@ -77,6 +81,60 @@ class TestLambdaHandler(unittest.TestCase):
         self.assertEqual(exp_res["statusCode"], 200)
         exp_body = json.loads(exp_res["body"])
         self.assertIn("#EXTM3U", exp_body["content"])
+
+    def test_rejects_invalid_generation_parameters(self):
+        cases = [
+            {"energy_weight": float("nan")},
+            {"harmonic_weight": float("inf")},
+            {"beam_width": None},
+            {"beam_width": 4.5},
+            {"curve_type": []},
+            {"user_id": None},
+            {"min_bpm": 120, "max_bpm": 80},
+            {"crossfade_seconds": 31},
+            {"allow_repeats": "yes"},
+            {"target_duration_minutes": 0},
+            {"target_duration_minutes": 45, "selected_genres": ["Unknown Genre"]},
+            {"target_duration_minutes": 45, "curve_type": "not-a-curve"},
+            {"target_duration_minutes": 45, "curve_type": "custom", "custom_points": []},
+            {
+                "target_duration_minutes": 45,
+                "energy_weight": -1,
+                "tempo_weight": 0,
+                "harmonic_weight": 0,
+                "genre_weight": 0,
+            },
+        ]
+        for payload in cases:
+            with self.subTest(payload=payload):
+                response = handler({
+                    "httpMethod": "POST",
+                    "path": "/playlists/generate",
+                    "body": json.dumps(payload),
+                }, None)
+                self.assertEqual(response["statusCode"], 400)
+
+    def test_rejects_unknown_export_format(self):
+        response = handler({
+            "httpMethod": "POST",
+            "path": "/playlists/export",
+            "body": json.dumps({"playlist": {}, "format": "xml"}),
+        }, None)
+        self.assertEqual(response["statusCode"], 400)
+
+    def test_lambda_deployment_import_contract(self):
+        repository_root = Path(__file__).resolve().parents[2]
+        environment = dict(os.environ)
+        environment["PYTHONPATH"] = str(repository_root / "backend")
+        result = subprocess.run(
+            [sys.executable, "-c", "from app.lambda_handler import handler; assert callable(handler)"],
+            cwd=repository_root,
+            env=environment,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
 
 if __name__ == "__main__":
     unittest.main()

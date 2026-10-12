@@ -5,6 +5,7 @@ Manages persistent catalog asset storage and exports on Amazon S3 with local dis
 import os
 import json
 import logging
+import tempfile
 from typing import Dict, Any, List, Optional
 from pathlib import Path
 
@@ -20,13 +21,21 @@ class S3Storage:
         self.s3_client = None
         self.is_connected = False
 
-        self.fallback_dir = Path(__file__).resolve().parent.parent / "data" / "s3_local_exports"
+        local_root = os.environ.get("LOCAL_DATA_DIR")
+        if local_root:
+            self.fallback_dir = Path(local_root) / "s3_local_exports"
+        elif os.environ.get("AWS_EXECUTION_ENV"):
+            self.fallback_dir = Path(tempfile.gettempdir()) / "audio_architecture" / "s3_local_exports"
+        else:
+            self.fallback_dir = Path(__file__).resolve().parent.parent / "data" / "s3_local_exports"
         self.fallback_dir.mkdir(parents=True, exist_ok=True)
 
         self._init_client()
 
     def _init_client(self):
         """Attempts to initialize boto3 S3 client."""
+        if os.environ.get("LOCAL_ONLY") == "1":
+            return
         try:
             import boto3
             client = boto3.client("s3", region_name=self.region_name)
@@ -52,12 +61,17 @@ class S3Storage:
                     Body=content.encode("utf-8"),
                     ContentType=content_type
                 )
-                url = f"https://{self.bucket_name}.s3.{self.region_name}.amazonaws.com/{file_key}"
-                return url
+                return self.s3_client.generate_presigned_url(
+                    "get_object",
+                    Params={"Bucket": self.bucket_name, "Key": file_key},
+                    ExpiresIn=3600,
+                )
             except Exception as e:
                 logger.error("Failed uploading to S3: %s. Using local fallback.", str(e))
 
         # Local fallback
+        if os.environ.get("AWS_EXECUTION_ENV"):
+            raise RuntimeError("S3 export storage is unavailable.")
         local_target = self.fallback_dir / Path(file_key).name
         try:
             with open(local_target, "w", encoding="utf-8") as f:

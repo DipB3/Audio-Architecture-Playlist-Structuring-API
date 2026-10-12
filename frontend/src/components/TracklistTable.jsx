@@ -1,5 +1,5 @@
 import React from 'react';
-import { Play, Square, Music, Volume2, ArrowRight, CheckCircle, AlertCircle } from 'lucide-react';
+import { Play, Square, Music } from 'lucide-react';
 
 export default function TracklistTable({ playlist, activeTrackId, onPlayTrack, onStopAudio }) {
   if (!playlist || !playlist.tracks || playlist.tracks.length === 0) {

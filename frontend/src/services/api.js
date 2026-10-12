@@ -4,7 +4,7 @@
  * built-in client-side engine fallback for offline demo resilience.
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "http://localhost:8000").replace(/\/$/, '');
 
 // Client-side fallback catalog
 import catalogFallback from "../../../backend/app/data/track_catalog.json";
@@ -41,7 +41,7 @@ export async function fetchGenres() {
       const data = await res.json();
       return data.genres;
     }
-  } catch (err) {
+  } catch {
     console.warn("Backend /genres unreachable, computing from local catalog");
   }
 
@@ -76,7 +76,7 @@ export async function fetchPresets() {
       const data = await res.json();
       return data.presets;
     }
-  } catch (err) {
+  } catch {
     console.warn("Backend /presets unreachable, using default presets");
   }
 
@@ -134,22 +134,23 @@ export async function fetchPresets() {
 }
 
 export async function generatePlaylist(params) {
+  let response;
   try {
-    const res = await fetch(`${API_BASE_URL}/playlists/generate`, {
+    response = await fetch(`${API_BASE_URL}/playlists/generate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(params)
     });
-    if (res.ok) {
-      const data = await res.json();
+    if (response.ok) {
+      const data = await response.json();
       return data.playlist;
     }
   } catch (err) {
     console.warn("Backend /playlists/generate unreachable, executing client-side optimization algorithm fallback:", err.message);
+    return runClientSideOptimizer(params);
   }
-
-  // Client-side fallback implementation
-  return runClientSideOptimizer(params);
+  const error = await response.json().catch(() => ({}));
+  throw new Error(error.message || `Playlist generation failed (${response.status}).`);
 }
 
 export async function fetchHistory() {
@@ -159,29 +160,54 @@ export async function fetchHistory() {
       const data = await res.json();
       return data.history;
     }
-  } catch (err) {
+  } catch {
     console.warn("Backend /playlists/history unreachable");
   }
 
   // Load from local storage
-  const saved = localStorage.getItem("audio_arch_history");
-  return saved ? JSON.parse(saved) : [];
+  const saved = localStorage.getItem("audio_arch_playlists");
+  const playlists = saved ? JSON.parse(saved) : [];
+  return playlists.map(toHistorySummary);
+}
+
+export async function fetchPlaylist(playlistId) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/playlists/${encodeURIComponent(playlistId)}`);
+    if (res.ok) {
+      const data = await res.json();
+      return data.playlist;
+    }
+  } catch (err) {
+    console.warn("Backend playlist retrieval unreachable, checking browser storage:", err.message);
+  }
+
+  const saved = JSON.parse(localStorage.getItem("audio_arch_playlists") || "[]");
+  const playlist = saved.find(item => item.playlist_id === playlistId);
+  if (!playlist) throw new Error(`Playlist '${playlistId}' was not found.`);
+  return playlist;
 }
 
 export async function exportPlaylist(params) {
+  let response;
   try {
-    const res = await fetch(`${API_BASE_URL}/playlists/export`, {
+    response = await fetch(`${API_BASE_URL}/playlists/export`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(params)
     });
-    if (res.ok) {
-      return await res.json();
+    if (response.ok) {
+      return await response.json();
     }
-  } catch (err) {
+  } catch {
     console.warn("Backend export unreachable, building export locally");
+    return buildLocalExport(params);
   }
 
+  const error = await response.json().catch(() => ({}));
+  throw new Error(error.message || `Playlist export failed (${response.status}).`);
+}
+
+function buildLocalExport(params) {
   const { playlist, format } = params;
   if (format === "m3u") {
     let lines = ["#EXTM3U", `#PLAYLIST:${playlist.name}`, ""];
@@ -219,6 +245,19 @@ export async function exportPlaylist(params) {
   }
 }
 
+function toHistorySummary(playlist) {
+  return {
+    playlist_id: playlist.playlist_id,
+    name: playlist.name,
+    created_at: playlist.created_at,
+    curve_type: playlist.curve_type,
+    track_count: playlist.track_count,
+    actual_duration_formatted: playlist.actual_duration_formatted,
+    overall_fit_score: playlist.metrics?.overall_fit_score || 0,
+    genres_used: playlist.genres_used || []
+  };
+}
+
 // Client-side mathematical curve calculation
 function computeClientEnergy(curveType, t, customPoints) {
   t = Math.max(0, Math.min(1, t));
@@ -247,41 +286,123 @@ function computeClientEnergy(curveType, t, customPoints) {
   return 0.5;
 }
 
-function runClientSideOptimizer(params) {
-  const { target_duration_minutes = 45, selected_genres = [], curve_type = "pomodoro_peak", custom_points = [], name } = params;
-  const targetSeconds = target_duration_minutes * 60;
+function tempoAffinity(firstBpm, secondBpm) {
+  const delta = Math.min(
+    Math.abs(firstBpm - secondBpm),
+    Math.abs(firstBpm * 2 - secondBpm),
+    Math.abs(firstBpm - secondBpm * 2)
+  );
+  return Math.exp(-(delta ** 2) / (2 * 12 ** 2));
+}
 
-  let pool = catalogFallback;
+function harmonicTransition(firstCode, secondCode) {
+  const parse = code => {
+    const match = /^(\d{1,2})([AB])$/.exec(code || "");
+    return match ? { hour: Number(match[1]), mode: match[2] } : null;
+  };
+  const first = parse(firstCode);
+  const second = parse(secondCode);
+  if (!first || !second) return { distance: 6, compatible: false, score: 0.1 };
+  const rawDistance = Math.abs(first.hour - second.hour);
+  const distance = Math.min(rawDistance, 12 - rawDistance);
+  const sameMode = first.mode === second.mode;
+  let score;
+  if (distance === 0 && sameMode) score = 1;
+  else if (distance === 0) score = 0.92;
+  else if (distance === 1 && sameMode) score = 0.85;
+  else if (distance === 1) score = 0.75;
+  else if (distance === 2 && sameMode) score = 0.65;
+  else score = Math.max(0.1, 0.5 - 0.08 * distance);
+  return { distance, compatible: distance <= 1 || (distance === 2 && sameMode), score };
+}
+
+function genreAffinity(firstGenre, secondGenre) {
+  if (firstGenre === secondGenre) return 1;
+  const pair = [firstGenre, secondGenre].sort().join("|");
+  const affinities = {
+    "Ambient|Contemporary Classical Piano": 0.95,
+    "Hip-Hop|Neo-Soul": 0.94,
+    "Deep House|Synthwave": 0.92,
+    "Contemporary Classical Piano|Neo-Soul": 0.88,
+    "Indie Pop|Neo-Soul": 0.86,
+    "Indie Pop|Synthwave": 0.84,
+    "Hip-Hop|Indie Pop": 0.82,
+    "Ambient|Hip-Hop": 0.82,
+    "Ambient|Deep House": 0.8,
+    "Deep House|Indie Pop": 0.76,
+    "Contemporary Classical Piano|Indie Pop": 0.72,
+    "Contemporary Classical Piano|Hip-Hop": 0.65
+  };
+  return affinities[pair] || 0.6;
+}
+
+function runClientSideOptimizer(params) {
+  const {
+    target_duration_minutes = 45,
+    selected_genres = [],
+    curve_type = "pomodoro_peak",
+    custom_points = [],
+    name,
+    energy_weight = 0.4,
+    tempo_weight = 0.25,
+    harmonic_weight = 0.2,
+    genre_weight = 0.15,
+    min_bpm = 40, max_bpm = 220, excluded_track_ids = [],
+    allow_repeats = true, crossfade_seconds = 0, diversity_strength = .25
+  } = params;
+  const targetSeconds = target_duration_minutes * 60;
+  const weightTotal = energy_weight + tempo_weight + harmonic_weight + genre_weight || 1;
+  const weights = {
+    energy: energy_weight / weightTotal,
+    tempo: tempo_weight / weightTotal,
+    harmonic: harmonic_weight / weightTotal,
+    genre: genre_weight / weightTotal
+  };
+
+  if (!Number.isFinite(target_duration_minutes) || target_duration_minutes < 15 || target_duration_minutes > 180)
+    throw new Error("Duration must be between 15 and 180 minutes.");
+  if (min_bpm > max_bpm) throw new Error("Minimum BPM cannot exceed maximum BPM.");
+  let pool = catalogFallback.filter(track => track.bpm >= min_bpm && track.bpm <= max_bpm &&
+    !excluded_track_ids.includes(track.id));
   if (selected_genres.length > 0) {
     const filtered = pool.filter(t => selected_genres.includes(t.genre));
-    if (filtered.length > 0) pool = filtered;
+    pool = filtered;
   }
+  if (!pool.length) throw new Error("No tracks match your session preferences.");
 
   const selectedTracks = [];
   const usedIds = new Set();
   let elapsed = 0;
   let prevTrack = null;
 
-  while (elapsed < targetSeconds - 90 && selectedTracks.length < 25) {
+  const shortestTrack = Math.min(...pool.map(track => track.duration_seconds - crossfade_seconds));
+  const maxTracks = Math.ceil(targetSeconds / shortestTrack) + 2;
+  while (elapsed < targetSeconds - 90 && selectedTracks.length < maxTracks) {
     const normT = Math.min(1, Math.max(0, (elapsed + 120) / targetSeconds));
     const targetE = computeClientEnergy(curve_type, normT, custom_points);
 
     // Score candidates
-    const scored = pool
-      .filter(t => !usedIds.has(t.id))
+    let candidates = pool.filter(t => !usedIds.has(t.id));
+    if (candidates.length === 0) {
+      if (!allow_repeats) break;
+      usedIds.clear();
+      candidates = pool.length > 1 ? pool.filter(track => track.id !== prevTrack?.id) : pool;
+    }
+    const scored = candidates
       .map(t => {
         const eScore = 1.0 - Math.abs(t.energy - targetE);
         let bpmScore = 1.0;
         let camelotScore = 1.0;
+        let genreScore = 1.0;
         if (prevTrack) {
-          const deltaBpm = Math.min(
-            Math.abs(t.bpm - prevTrack.bpm),
-            Math.abs(t.bpm * 2 - prevTrack.bpm),
-            Math.abs(t.bpm - prevTrack.bpm * 2)
-          );
-          bpmScore = Math.exp(-Math.pow(deltaBpm / 15, 2));
+          bpmScore = tempoAffinity(prevTrack.bpm, t.bpm);
+          camelotScore = harmonicTransition(prevTrack.camelot_code, t.camelot_code).score;
+          const count = selectedTracks.filter(track => track.genre === t.genre).length;
+          genreScore = (1 - diversity_strength) * genreAffinity(prevTrack.genre, t.genre) +
+            diversity_strength / (1 + count);
         }
-        const total = eScore * 0.45 + bpmScore * 0.35 + camelotScore * 0.20;
+        const total = eScore * weights.energy + bpmScore * weights.tempo +
+          camelotScore * weights.harmonic + genreScore * weights.genre;
         return { track: t, score: total };
       });
 
@@ -290,16 +411,22 @@ function runClientSideOptimizer(params) {
 
     selectedTracks.push(chosen);
     usedIds.add(chosen.id);
-    elapsed += chosen.duration_seconds;
+    elapsed += chosen.duration_seconds - (selectedTracks.length > 1 ? crossfade_seconds : 0);
     prevTrack = chosen;
   }
 
-  // Trajectory & Transitions
+  // Trajectory, transitions, and measured quality metrics
   const trajectory = [];
+  const transitions = [];
   let accumSec = 0;
+  let energyError = 0;
+  let tempoScoreTotal = 0;
+  let harmonicCompatible = 0;
   selectedTracks.forEach((t, i) => {
+    if (i > 0) accumSec -= crossfade_seconds;
     const normT = Math.min(1, (accumSec + t.duration_seconds / 2) / elapsed);
     const targetE = computeClientEnergy(curve_type, normT, custom_points);
+    energyError += Math.abs(t.energy - targetE);
     trajectory.push({
       index: i + 1,
       time_seconds: accumSec,
@@ -315,8 +442,33 @@ function runClientSideOptimizer(params) {
       bpm: t.bpm,
       camelot_code: t.camelot_code
     });
+    if (i > 0) {
+      const previous = selectedTracks[i - 1];
+      const harmonic = harmonicTransition(previous.camelot_code, t.camelot_code);
+      const tempoScore = tempoAffinity(previous.bpm, t.bpm);
+      const genreScore = genreAffinity(previous.genre, t.genre);
+      tempoScoreTotal += tempoScore;
+      if (harmonic.compatible) harmonicCompatible += 1;
+      transitions.push({
+        from_track_id: previous.id,
+        to_track_id: t.id,
+        bpm_delta: Math.round(Math.abs(previous.bpm - t.bpm) * 10) / 10,
+        camelot_distance: harmonic.distance,
+        camelot_compatible: harmonic.compatible,
+        genre_transition: `${previous.genre} -> ${t.genre}`,
+        transition_score: Math.round((tempoScore * 0.4 + harmonic.score * 0.35 + genreScore * 0.25) * 1000) / 1000
+      });
+    }
     accumSec += t.duration_seconds;
   });
+
+  const transitionCount = Math.max(1, transitions.length);
+  const averageEnergyError = energyError / Math.max(1, selectedTracks.length);
+  const tempoSmoothness = tempoScoreTotal / transitionCount;
+  const harmonicRate = harmonicCompatible / transitionCount * 100;
+  const durationAccuracy = Math.max(0, 100 - Math.abs(elapsed - targetSeconds) / targetSeconds * 100);
+  const overallFit = (1 - Math.min(1, averageEnergyError * 2)) * 0.4 +
+    tempoSmoothness * 0.25 + harmonicRate / 100 * 0.2 + durationAccuracy / 100 * 0.15;
 
   const playlistId = `pl_client_${Date.now().toString(36)}`;
   const playlist = {
@@ -330,34 +482,37 @@ function runClientSideOptimizer(params) {
     genres_used: [...new Set(selectedTracks.map(t => t.genre))],
     curve_type,
     tracks: selectedTracks,
-    transitions: [],
+    transitions,
     energy_trajectory: trajectory,
     metrics: {
-      overall_fit_score: 0.92,
-      avg_energy_error: 0.08,
-      tempo_smoothness_score: 0.89,
-      harmonic_compatibility_rate: 85.0,
+      overall_fit_score: Math.round(overallFit * 1000) / 1000,
+      avg_energy_error: Math.round(averageEnergyError * 1000) / 1000,
+      tempo_smoothness_score: Math.round(tempoSmoothness * 1000) / 1000,
+      harmonic_compatibility_rate: Math.round(harmonicRate * 10) / 10,
       genre_diversity_count: new Set(selectedTracks.map(t => t.genre)).size,
-      duration_accuracy_percent: 96.5
+      duration_accuracy_percent: Math.round(durationAccuracy * 100) / 100
     },
-    user_id: "guest_user"
+    user_id: "guest_user",
+    diagnostics: {
+      engine: "browser-greedy", crossfade_seconds,
+      custom_points,
+      target_samples: Array.from({ length: 101 }, (_, index) => ({
+        time_fraction: index / 100,
+        energy: computeClientEnergy(curve_type, index / 100, custom_points)
+      })),
+      warnings: [
+        "Offline mode uses a simpler greedy optimizer and browser storage.",
+        ...(Math.abs(elapsed - targetSeconds) > 90 ? ["Whole tracks could not match the requested duration."] : [])
+      ]
+    }
   };
 
   // Save to localStorage history
   try {
-    const history = JSON.parse(localStorage.getItem("audio_arch_history") || "[]");
-    history.unshift({
-      playlist_id: playlist.playlist_id,
-      name: playlist.name,
-      created_at: playlist.created_at,
-      curve_type: playlist.curve_type,
-      track_count: playlist.track_count,
-      actual_duration_formatted: playlist.actual_duration_formatted,
-      overall_fit_score: playlist.metrics.overall_fit_score,
-      genres_used: playlist.genres_used
-    });
-    localStorage.setItem("audio_arch_history", JSON.stringify(history.slice(0, 15)));
-  } catch (e) {
+    const history = JSON.parse(localStorage.getItem("audio_arch_playlists") || "[]");
+    history.unshift(playlist);
+    localStorage.setItem("audio_arch_playlists", JSON.stringify(history.slice(0, 15)));
+  } catch {
     // Ignore storage errors
   }
 

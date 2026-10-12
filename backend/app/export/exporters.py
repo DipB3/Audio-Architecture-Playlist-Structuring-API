@@ -21,6 +21,7 @@ def export_to_m3u(playlist: StructuredPlaylist) -> str:
         f"#TARGET_DURATION:{playlist.target_duration_minutes}m",
         f"#ACTUAL_DURATION:{playlist.actual_duration_formatted}",
         f"#OVERALL_FIT_SCORE:{playlist.metrics.overall_fit_score}",
+        f"#PLANNED_CROSSFADE_SECONDS:{playlist.diagnostics.get('crossfade_seconds', 0)}",
         ""
     ]
 

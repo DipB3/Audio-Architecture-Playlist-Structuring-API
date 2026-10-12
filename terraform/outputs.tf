@@ -27,3 +27,18 @@ output "cloudwatch_log_group" {
   description = "CloudWatch log group for audio engine telemetry"
   value       = aws_cloudwatch_log_group.lambda_logs.name
 }
+
+output "frontend_bucket_name" {
+  description = "Private S3 bucket containing the compiled React application"
+  value       = aws_s3_bucket.frontend.id
+}
+
+output "frontend_cloudfront_distribution_id" {
+  description = "CloudFront distribution ID used for cache invalidation after deployments"
+  value       = aws_cloudfront_distribution.frontend.id
+}
+
+output "frontend_url" {
+  description = "Public HTTPS URL for the React application"
+  value       = "https://${aws_cloudfront_distribution.frontend.domain_name}"
+}

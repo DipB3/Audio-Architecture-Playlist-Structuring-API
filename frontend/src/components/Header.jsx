@@ -1,5 +1,5 @@
 import React from 'react';
-import { Radio, Database, Cloud, FileText, History, Activity, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Radio, Cloud, FileText, History } from 'lucide-react';
 
 export default function Header({ onOpenHistory, onOpenHealth, onOpenDocs }) {
   return (

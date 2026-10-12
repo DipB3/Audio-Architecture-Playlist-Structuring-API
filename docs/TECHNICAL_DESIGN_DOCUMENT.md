@@ -20,7 +20,7 @@
 
 Continuous audio listening is an integral component of modern cognitive environments, ranging from high-focus software engineering sessions and intensive academic study to interval athletic conditioning and mindful decompression. While modern streaming platforms provide millions of tracks, automated recommendation systems typically rely on collaborative filtering or track-by-track shuffle heuristics that prioritize individual track affinity rather than macro-level temporal energy progression. 
 
-The **Audio Architecture & Playlist Structuring API** is a serverless, cloud-native system engineered to mathematically structure continuous, multi-genre audio playlists tailored to explicit mathematical energy curves \(E(t)\). By treating playlist sequencing as a multi-objective trajectory optimization problem over acoustic feature spaces (energy, tempo/BPM, Camelot harmonic key, and acoustic affinity), the system guarantees deliberate energy flow across extended sessions without the cognitive burden of manual curation.
+The **Audio Architecture & Playlist Structuring API** is a serverless, cloud-native system engineered to mathematically structure continuous, multi-genre audio playlists tailored to explicit mathematical energy curves \(E(t)\). By treating playlist sequencing as a multi-objective trajectory optimization problem over acoustic feature spaces (energy, tempo/BPM, Camelot harmonic key, and acoustic affinity), the system targets deliberate energy flow across extended sessions without the cognitive burden of manual curation.
 
 ---
 
@@ -36,7 +36,7 @@ Listeners face several systemic barriers when attempting to curate functional, e
 
 ## 3. Solution Architecture
 
-The system is architected as a decoupled, event-driven serverless system on **Amazon Web Services (AWS)** using four cloud managed services, provisioned declaratively via **Terraform (Infrastructure as Code)** and automated with **GitHub Actions (CI/CD)**.
+The system is architected as a decoupled, event-driven serverless system on **Amazon Web Services (AWS)** using managed services provisioned declaratively via **Terraform (Infrastructure as Code)** and automated with **GitHub Actions (CI/CD)**. CloudFront serves the compiled React application from a private S3 origin, while API Gateway exposes the Lambda API.
 
 ```mermaid
 flowchart TD
@@ -81,11 +81,12 @@ flowchart TD
 ```
 
 ### AWS Managed Services Utilized (Adhering to Guideline 4 & 7):
-1. **AWS Lambda:** Executes the multi-objective audio architecture engine statelessly in under 100 milliseconds per request, scaling to zero with no idle compute costs.
+1. **AWS Lambda:** Executes the metadata sequencing engine without maintaining a dedicated server. Actual deployed latency and account costs require measurement.
 2. **Amazon API Gateway (HTTP API v2):** Provides low-latency entrypoint management, automatic CORS preflight handling, JSON payload routing, and integration with CloudWatch access logging.
 3. **Amazon DynamoDB:** Fully managed NoSQL table using `PAY_PER_REQUEST` billing mode, providing sub-10ms persistence for structured playlists, curve parameters, and historical generations.
 4. **Amazon S3:** Object storage hosting the acoustic track catalog dataset and storing packaged playlist exports (`.m3u`, `.json`, `.csv`) with a 30-day lifecycle expiration rule.
-5. **AWS Budgets & CloudWatch Alarms:** Strict budget limit (\$5.00 threshold) with automated email alerting to guarantee zero unexpected personal expenditure.
+5. **Amazon CloudFront:** HTTPS content delivery for the React single-page application backed by a private S3 origin.
+6. **AWS Budgets & CloudWatch:** A \$5.00 notification threshold plus execution and access logging. Budget alerts notify the team but do not enforce a hard spending cap.
 
 ---
 
@@ -123,6 +124,13 @@ sequenceDiagram
 ---
 
 ## 5. Technical Designs
+
+The current engine uses duration-aware beam search with default width 12,
+three energy samples per track, cached transition features and elapsed-time
+diversity during pruning. It supports exclusions, BPM bounds, planned crossfade,
+repeat control and genre balance. The current scoring and limits are specified
+in MATHEMATICAL_FORMULATION.md, which supersedes the earlier midpoint-only
+equations and width-six implementation described below.
 
 ### 5.1 Mathematical Energy Profiling Formulation
 
@@ -224,10 +232,10 @@ where:
 
 ## 6. Lessons Learned
 
-1. **Serverless Execution Profile:** In-memory pre-loading of the acoustic catalog into the Lambda global execution context achieved cold-start execution times under 120ms and warm invocations under 25ms, fully eliminating the need for expensive dedicated container instances.
+1. **Serverless Execution Profile:** The catalog loads once per execution environment. Local measurements appear in TEST_RESULTS.md. Cloud cold-start and warm invocation latency require measurement after deployment.
 2. **Harmonic Modular Arithmetic:** Treating Camelot keys as a cyclic group $\mathbb{Z}_{12}$ significantly simplified harmonic transition calculations and allowed seamless integration of double-time and half-time tempo shifts for genre boundary crossings.
 3. **Decoupled Local Simulation:** Equipping the codebase with a native local ASGI/HTTP gateway proxy ensured the team could develop, debug, and run live interactive demonstrations without requiring constant cloud deployments or incurring egress charges.
-4. **Cloud Cost Discipline:** Implementing AWS Budgets alongside Terraform's lifecycle expiration rules on S3 ensured complete peace of mind, proving that production-grade architectures can operate strictly within AWS Free Tier limits ($0.00 actual cost).
+4. **Cloud Cost Discipline:** Budget notifications and S3 lifecycle rules help monitor costs. Actual account costs and free-tier eligibility require verification after deployment.
 
 ---
 
@@ -236,14 +244,14 @@ where:
 ### Dipankar Banerjee (Registration No: 240905618)
 - Architected and scripted the modular **Terraform Infrastructure as Code (IaC)** configuration across all AWS resources (`main.tf`, `api_gateway.tf`, `lambda.tf`, `dynamodb.tf`, `s3.tf`, `iam.tf`, `budgets.tf`).
 - Designed the Amazon DynamoDB table schema, indexes, and on-demand billing model.
-- Configured the automated GitHub Actions CI/CD workflow for automated unit test execution, frontend build verification, and Terraform validation.
+- Configured the GitHub Actions CI/CD workflow for unit tests, frontend builds, Terraform validation, AWS infrastructure deployment, CloudFront publication and API smoke testing.
 - Implemented the AWS Budgets \$5.00 threshold monitoring and alerting to satisfy Guideline 7.
 
 ### Pratham Shah (Registration No: 240905614)
 - Formulated the mathematical equations for continuous energy curves \(E(t)\) (Pomodoro, Linear Ascent/Descent, Interval Wave, Steady Flow, Sunset).
 - Developed the Camelot Wheel musical key compatibility engine and cyclic circular distance algorithms.
 - Authored the multi-objective Beam Search optimizer incorporating dynamic duration constraints, tempo Gaussian decay, and genre acoustic bridging.
-- Authored the Python unit testing suite covering curve boundary conditions, optimizer performance, and harmonic edge cases (21 test cases).
+- Authored the Python unit testing suite covering curve boundary conditions, optimizer performance, harmonic edge cases, request validation and Lambda import compatibility (24 test cases).
 
 ### Vaibhav Bhatia (Registration No: 240905504)
 - Designed and built the responsive **User Interface Module** using React, Vite, and Tailwind CSS.

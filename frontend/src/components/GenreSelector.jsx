@@ -1,5 +1,5 @@
 import React from 'react';
-import { Layers, Music2, Check } from 'lucide-react';
+import { Check } from 'lucide-react';
 
 const GENRE_COLORS = {
   "Contemporary Classical Piano": "from-amber-500/20 to-orange-500/20 text-amber-300 border-amber-600/40",

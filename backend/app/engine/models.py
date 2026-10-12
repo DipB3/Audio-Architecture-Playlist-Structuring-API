@@ -129,6 +129,7 @@ class StructuredPlaylist:
     energy_trajectory: List[EnergyTrajectoryPoint]
     metrics: ArchitectureMetrics
     user_id: str = "guest_user"
+    diagnostics: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -145,5 +146,6 @@ class StructuredPlaylist:
             "transitions": [tr.to_dict() for tr in self.transitions],
             "energy_trajectory": [p.to_dict() for p in self.energy_trajectory],
             "metrics": self.metrics.to_dict(),
-            "user_id": self.user_id
+            "user_id": self.user_id,
+            "diagnostics": self.diagnostics
         }

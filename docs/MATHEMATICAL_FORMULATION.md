@@ -1,60 +1,47 @@
-# Mathematical Formulation: Audio Architecture Engine
+# Playlist Optimization Formulation
 
-## 1. Domain Definition
+Each track has energy e, tempo b, key c, genre g and duration d.
+The request supplies an energy curve E(t) on [0,1], duration D, genres,
+BPM bounds, exclusions and optional crossfade x.
 
-Let $\mathcal{C} = \{T_1, T_2, \dots, T_N\}$ be the track catalog, where each track $T_i$ is parameterized by a multi-dimensional acoustic vector:
-$$\mathbf{v}(T_i) = \begin{bmatrix} e_i \\ b_i \\ c_i \\ g_i \\ d_i \end{bmatrix} = \begin{bmatrix} \text{Acoustic Energy} \in [0, 1] \\ \text{Tempo (BPM)} \in \mathbb{R}^+ \\ \text{Camelot Key Code} \in \{1\text{A}\dots 12\text{A}, 1\text{B}\dots 12\text{B}\} \\ \text{Genre Label} \in \mathcal{G} \\ \text{Duration (seconds)} \in \mathbb{Z}^+ \end{bmatrix}$$
+Track k starts at the sum of preceding durations minus x times the preceding
+transition count. Total duration is the sum of durations minus x(K-1).
 
-Given user inputs:
-- Target duration $D_{\text{target}}$ (seconds)
-- Permissible genres $\mathcal{G}_{\text{user}} \subseteq \mathcal{G}$
-- Target continuous energy curve $E_{\text{target}}(t): [0, 1] \rightarrow [0.05, 0.95]$
+Energy error averages absolute deviation from E(t) at 15%, 50% and 85% of each
+track. Search normalizes against requested duration. Final scoring normalizes
+against actual duration. Summary energy error weights samples by track duration.
 
-Find an ordered sequence of tracks $\mathcal{S} = (T_{\pi(1)}, T_{\pi(2)}, \dots, T_{\pi(K)})$ maximizing composite session fitness.
+Effective BPM distance is the minimum direct, half-time and double-time
+distance. Tempo affinity is exp(-distance squared / (2 times 12 squared)).
+Displayed BPM delta uses effective distance.
 
----
+Camelot scores are 1 for identical keys, .92 for relative major/minor,
+.85 for same-mode adjacent keys, .75 for adjacent mode changes and .65 for
+same-mode two-hour lifts. Other transitions score max(.1, .5-.08 times distance).
 
-## 2. Objective Functions
+Genre scoring combines acoustic affinity with 1/(1 + prior genre count).
+The diversity parameter controls the balance. Coverage is a soft preference.
 
-### 2.1 Energy Curve Fitness
-For each track $T_{\pi(k)}$ positioned at normalized time:
-$$t_k = \frac{\sum_{j=1}^{k-1} d_{\pi(j)} + \frac{1}{2}d_{\pi(k)}}{\sum_{j=1}^K d_{\pi(j)}}$$
+Weights normalize to a total of one. Beam states contain accumulated
+duration-weighted utility, elapsed duration and track indices. Filters remove
+ineligible tracks before search. Tracks repeat only after pool exhaustion, and
+consecutive identical tracks are avoided when alternatives exist.
 
-The energy error is:
-$$\epsilon_{\text{energy}}(k) = |e_{\pi(k)} - E_{\text{target}}(t_k)|$$
-$$S_{\text{energy}}(k) = 1.0 - \epsilon_{\text{energy}}(k)$$
+Pruning preserves different end tracks, elapsed-time buckets and genre coverage.
+Completed paths stay available for final ranking, which adds duration accuracy
+and coverage terms and recalculates curve fit. The default beam width is 12,
+configurable from 2 to 32. Search runs at most 128 steps.
 
-### 2.2 Tempo Proximity & Harmonic Doubling
-Tempo continuity penalizes abrupt jumps while recognizing that tempos related by octave multipliers (e.g., half-time $70 \text{ BPM}$ to double-time $140 \text{ BPM}$) are perceptually coherent:
-$$\Delta b_k = \min\left( |b_{\pi(k)} - b_{\pi(k-1)}|, |b_{\pi(k)} - 2b_{\pi(k-1)}|, |2b_{\pi(k)} - b_{\pi(k-1)}| \right)$$
-$$S_{\text{tempo}}(k) = \exp\left( -\frac{(\Delta b_k)^2}{2\sigma_{\text{bpm}}^2} \right), \quad \sigma_{\text{bpm}} = 12.0$$
+Bounded caches store musical transition features and per-request curve errors.
+Expansion costs approximately O(K B N) for steps K, width B and catalog size N,
+plus final rescoring.
 
-### 2.3 Harmonic Camelot Compatibility Group $\mathbb{Z}_{12} \times \mathbb{Z}_2$
-Let Camelot codes be mapped to circular coordinates $(h, m)$ with $h \in \mathbb{Z}_{12}$ and mode $m \in \{0, 1\}$.
-Circular distance:
-$$d_{\text{Camelot}}(C_1, C_2) = \min(|h_1 - h_2|, 12 - |h_1 - h_2|)$$
+Overall fit is .4(1-energy error) + .25(tempo affinity) +
+.2(harmonic compatible fraction) + .15(duration accuracy).
+Duration accuracy is max(0, 1 - absolute duration error / requested duration).
+Compatibility includes same-mode two-hour lifts.
 
-The harmonic transition compatibility is given by:
-$$S_{\text{harmonic}}(C_1, C_2) = \begin{cases}
-1.00 & d_{\text{Camelot}} = 0 \land m_1 = m_2 \quad (\text{Identical key}) \\
-0.92 & d_{\text{Camelot}} = 0 \land m_1 \neq m_2 \quad (\text{Relative Major/Minor}) \\
-0.85 & d_{\text{Camelot}} = 1 \land m_1 = m_2 \quad (\text{Fifth / Fourth transition}) \\
-0.75 & d_{\text{Camelot}} = 1 \land m_1 \neq m_2 \quad (\text{Diagonal modal shift}) \\
-0.65 & d_{\text{Camelot}} = 2 \land m_1 = m_2 \quad (\text{Energy modulation boost}) \\
-\max(0.10, 0.50 - 0.08 \cdot d_{\text{Camelot}}) & d_{\text{Camelot}} \ge 3
-\end{cases}$$
-
-### 2.4 Multi-Genre Acoustic Affinity Matrix
-Genre transitions $g_1 \rightarrow g_2$ are scored via symmetric affinity coefficients $\mathbf{A}(g_1, g_2) \in [0.60, 1.00]$, prioritizing acoustic bridges (e.g. classical piano to indie pop bridged by ambient/lo-fi textures).
-
----
-
-## 3. Optimization via Beam Search
-
-Let state $\mathbf{s}_k = (\text{seq}_k, \text{elapsed}_k, \text{score}_k)$ represent a path of length $k$.
-At step $k$:
-1. Candidate expansion evaluates all $T \in \mathcal{C}_{\text{available}}$.
-2. Scored candidate transition:
-   $$\text{Fitness}(T, \mathbf{s}_k) = \text{score}_k + \left( w_e S_{\text{energy}} + w_t S_{\text{tempo}} + w_h S_{\text{harmonic}} + w_g S_{\text{genre}} \right) - \lambda_{\text{overshoot}}$$
-3. Pruning retains the top $B = 6$ paths by average step fitness.
-4. Terminates when $\text{elapsed} \ge D_{\text{target}} - \delta_{\text{tol}}$.
+Beam search is a heuristic, not a proof of a global optimum. Whole-track
+duration and catalog range can make requests infeasible. Diagnostics report
+excessive duration error, repeats and missing genre coverage. Browser fallback
+uses a simpler greedy search and identifies itself explicitly.

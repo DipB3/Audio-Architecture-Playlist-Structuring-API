@@ -1,4 +1,8 @@
 # Python
+.tools/
+.artifact-build/
+backend/app/data/saved_playlists/
+backend/app/data/s3_local_exports/
 __pycache__/
 *.py[cod]
 *$py.class
@@ -40,6 +44,7 @@ pnpm-debug.log*
 dist/
 dist-ssr/
 *.local
+frontend/.env.production
 
 # Terraform
 .terraform/
@@ -55,6 +60,7 @@ override.tf.json
 *_override.tf.json
 .terraformrc
 terraform.rc
+terraform/lambda_payload.zip
 
 # AWS & Environment
 .env

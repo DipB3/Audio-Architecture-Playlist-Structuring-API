@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Activity, ShieldCheck, Gauge, Music, CheckCircle2 } from 'lucide-react';
+import { Activity } from 'lucide-react';
 
 const GENRE_DOT_COLORS = {
   "Contemporary Classical Piano": "#f59e0b",
@@ -48,6 +48,11 @@ export default function EnergyCurveVisualizer({ playlist, activeTrackId, onTrack
       targetPath += ` C ${cX1} ${prevY}, ${cX2} ${y}, ${x} ${y}`;
     }
   });
+
+  if (playlist.diagnostics?.target_samples?.length) {
+    targetPath = playlist.diagnostics.target_samples.map((point, index) =>
+      `${index ? 'L' : 'M'} ${mapX(point.time_fraction)} ${mapY(point.energy)}`).join(' ');
+  }
 
   // Build actual playlist stepped path
   let actualPath = "";

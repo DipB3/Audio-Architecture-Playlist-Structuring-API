@@ -25,7 +25,7 @@ variable "budget_limit_usd" {
 variable "budget_alert_emails" {
   description = "List of email addresses to receive cloud budget overrun notifications"
   type        = list(string)
-  default     = [
+  default = [
     "vaibhav.bhatia@learner.manipal.edu",
     "pratham.shah@learner.manipal.edu",
     "dipankar.banerjee@learner.manipal.edu"

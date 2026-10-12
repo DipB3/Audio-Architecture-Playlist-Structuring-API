@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { X, History, ArrowRight, Music, Calendar } from 'lucide-react';
+import { X, History, ArrowRight } from 'lucide-react';
 import { fetchHistory } from '../services/api';
 
 export default function HistoryModal({ isOpen, onClose, onSelectHistoryPlaylist }) {
@@ -8,7 +8,6 @@ export default function HistoryModal({ isOpen, onClose, onSelectHistoryPlaylist 
 
   useEffect(() => {
     if (isOpen) {
-      setLoading(true);
       fetchHistory()
         .then((data) => setHistory(data))
         .catch((err) => console.error(err))
@@ -27,10 +26,10 @@ export default function HistoryModal({ isOpen, onClose, onSelectHistoryPlaylist 
           <div>
             <h3 className="text-base font-bold text-white flex items-center space-x-2">
               <History className="w-5 h-5 text-cyan-400" />
-              <span>Amazon DynamoDB Generation History</span>
+              <span>Saved Generation History</span>
             </h3>
             <p className="text-xs text-slate-400 mt-0.5">
-              Persistent NoSQL storage of generated audio architectures.
+              Reload the exact tracklist from your earlier sessions.
             </p>
           </div>
           <button
@@ -45,11 +44,11 @@ export default function HistoryModal({ isOpen, onClose, onSelectHistoryPlaylist 
         <div className="p-4 flex-1 overflow-auto space-y-3">
           {loading ? (
             <div className="py-12 text-center text-xs text-slate-400">
-              Querying DynamoDB table...
+              Loading saved sessions...
             </div>
           ) : history.length === 0 ? (
             <div className="py-12 text-center text-xs text-slate-400">
-              No saved architectures yet. Generate a playlist to persist it into DynamoDB.
+              No saved sessions yet. Generate a playlist to save your first session.
             </div>
           ) : (
             history.map((item) => (

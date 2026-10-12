@@ -8,6 +8,27 @@
 
 ## Endpoints
 
+## Engine version 2 options
+
+Generation also accepts min_bpm (20-300), max_bpm (20-300),
+excluded_track_ids (known catalog IDs), allow_repeats (boolean),
+crossfade_seconds (0-30), diversity_strength (0-1), and beam_width (integer 2-32,
+default 12). Empty candidate pools produce 400 errors instead of relaxing
+filters. Genre diversity is a preference rather than guaranteed coverage.
+
+The returned diagnostics include engine name, execution_ms, candidate_evaluations,
+eligible_track_count, duration_error_seconds, repeat_count, crossfade_seconds,
+warnings, custom_points and 101 target_samples. Stored sessions preserve these
+fields and JSON export includes them. M3U records planned crossfade as a comment.
+
+Crossfade changes the schedule only, not the actual audio signal. Previews use
+synthesized motifs, and exported media paths require supplied audio files.
+Cloud health returns 503 when required persistence adapters are unavailable.
+Local health identifies storage_mode as local. user_id organizes history but
+does not authenticate callers. The current application is a shared guest demo.
+
+All JSON error responses use the form `{"error": "...", "message": "..."}`. Playlist generation accepts durations from 15 to 180 minutes, rejects unknown genres and curves, normalizes non-negative optimizer weights, and requires at least two unique control points for a custom curve.
+
 ### 1. Health & Managed Services Diagnostic
 - **Method:** `GET`
 - **Path:** `/health`
@@ -136,6 +157,28 @@
   "format": "m3u"
 }
 ```
+
+---
+
+### 5. List Catalog Tracks
+- **Method:** `GET`
+- **Path:** `/tracks?genre=<genre>&limit=<1-50>`
+- **Response:** Track metadata filtered by genre when supplied.
+
+### 6. Retrieve Playlist
+- **Method:** `GET`
+- **Path:** `/playlists/{playlist_id}`
+- **Responses:** `200 OK` with the stored playlist, or `404 Not Found`.
+
+### 7. Generation History
+- **Method:** `GET`
+- **Path:** `/playlists/history?user_id=guest_user&limit=15`
+- **Response:** Newest-first playlist records from the DynamoDB `UserPlaylistIndex`.
+
+### 8. Energy Curve Presets
+- **Method:** `GET`
+- **Path:** `/presets`
+- **Response:** Available mathematical curves and sampled preview coordinates.
 - **Response `200 OK`:**
 ```json
 {

@@ -6,10 +6,19 @@ and user playlist history in Amazon DynamoDB with seamless local fallback.
 import os
 import json
 import logging
+import tempfile
 from typing import Dict, Any, List, Optional
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
+
+
+def history_summary(data):
+    return {
+        key: data.get(key)
+        for key in ("playlist_id", "name", "created_at", "curve_type",
+                    "track_count", "actual_duration_formatted", "genres_used")
+    } | {"overall_fit_score": float(data.get("metrics", {}).get("overall_fit_score", 0))}
 
 # Environment variable for DynamoDB table name (defaults configured via Terraform)
 TABLE_NAME = os.environ.get("DYNAMODB_TABLE_NAME", "AudioArchitectures")
@@ -24,13 +33,21 @@ class DynamoDBStorage:
         self.is_connected = False
 
         # Local storage fallback directory
-        self.fallback_dir = Path(__file__).resolve().parent.parent / "data" / "saved_playlists"
+        local_root = os.environ.get("LOCAL_DATA_DIR")
+        if local_root:
+            self.fallback_dir = Path(local_root) / "saved_playlists"
+        elif os.environ.get("AWS_EXECUTION_ENV"):
+            self.fallback_dir = Path(tempfile.gettempdir()) / "audio_architecture" / "saved_playlists"
+        else:
+            self.fallback_dir = Path(__file__).resolve().parent.parent / "data" / "saved_playlists"
         self.fallback_dir.mkdir(parents=True, exist_ok=True)
 
         self._init_client()
 
     def _init_client(self):
         """Attempts to initialize boto3 DynamoDB resource."""
+        if os.environ.get("LOCAL_ONLY") == "1":
+            return
         try:
             import boto3
             # Attempt to connect to AWS DynamoDB
@@ -71,6 +88,8 @@ class DynamoDBStorage:
                 logger.error("Failed to save to DynamoDB: %s. Falling back to local disk.", str(e))
 
         # Local fallback save
+        if os.environ.get("AWS_EXECUTION_ENV"):
+            return False
         try:
             file_path = self.fallback_dir / f"{playlist_id}.json"
             with open(file_path, "w", encoding="utf-8") as f:
@@ -102,6 +121,8 @@ class DynamoDBStorage:
                 logger.error("Failed to get from DynamoDB: %s", str(e))
 
         # Local fallback lookup
+        if os.environ.get("AWS_EXECUTION_ENV"):
+            return None
         file_path = self.fallback_dir / f"{playlist_id}.json"
         if file_path.exists():
             try:
@@ -111,12 +132,17 @@ class DynamoDBStorage:
                 logger.error("Failed to read local playlist: %s", str(e))
         return None
 
-    def list_recent_playlists(self, limit: int = 15) -> List[Dict[str, Any]]:
+    def list_recent_playlists(self, user_id: str = "guest_user", limit: int = 15) -> List[Dict[str, Any]]:
         """Lists recent playlist summaries."""
         if self.is_connected and self.table:
             try:
-                # Scan or query
-                response = self.table.scan(Limit=limit)
+                from boto3.dynamodb.conditions import Key
+                response = self.table.query(
+                    IndexName="UserPlaylistIndex",
+                    KeyConditionExpression=Key("user_id").eq(user_id),
+                    ScanIndexForward=False,
+                    Limit=limit,
+                )
                 items = response.get("Items", [])
                 def convert_decimals(obj):
                     from decimal import Decimal
@@ -127,28 +153,25 @@ class DynamoDBStorage:
                     elif isinstance(obj, list):
                         return [convert_decimals(v) for v in obj]
                     return obj
-                return [convert_decimals(item) for item in items]
+                return [history_summary(convert_decimals(item)) for item in items]
             except Exception as e:
                 logger.error("Failed scanning DynamoDB: %s", str(e))
 
         # Local fallback list
+        if os.environ.get("AWS_EXECUTION_ENV"):
+            return []
         results = []
         if self.fallback_dir.exists():
-            for p in sorted(self.fallback_dir.glob("*.json"), key=os.path.getmtime, reverse=True)[:limit]:
+            for p in sorted(self.fallback_dir.glob("*.json"), key=os.path.getmtime, reverse=True):
                 try:
                     with open(p, "r", encoding="utf-8") as f:
                         data = json.load(f)
+                        if data.get("user_id", "guest_user") != user_id:
+                            continue
                         # Return summary
-                        results.append({
-                            "playlist_id": data.get("playlist_id"),
-                            "name": data.get("name"),
-                            "created_at": data.get("created_at"),
-                            "curve_type": data.get("curve_type"),
-                            "track_count": data.get("track_count"),
-                            "actual_duration_formatted": data.get("actual_duration_formatted"),
-                            "overall_fit_score": data.get("metrics", {}).get("overall_fit_score", 0.0),
-                            "genres_used": data.get("genres_used", [])
-                        })
+                        results.append(history_summary(data))
+                        if len(results) >= limit:
+                            break
                 except Exception:
                     continue
         return results

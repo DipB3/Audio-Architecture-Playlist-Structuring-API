@@ -1,4 +1,12 @@
-name: CI/CD Pipeline - Audio Architecture System
+name: CI and AWS Deployment - Audio Architecture System
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: audio-architecture-${{ github.ref }}
+  cancel-in-progress: false
 
 on:
   push:
@@ -10,6 +18,10 @@ jobs:
   test-backend:
     name: Backend Unit Tests & Linting
     runs-on: ubuntu-latest
+    env:
+      LOCAL_ONLY: "1"
+      AWS_EC2_METADATA_DISABLED: "true"
+      LOCAL_DATA_DIR: ${{ runner.temp }}/audio-api-tests
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
@@ -28,6 +40,21 @@ jobs:
       - name: Run Python Unit Tests
         run: |
           python -m unittest discover -s backend/tests -v
+
+      - name: Verify Lambda Deployment Import
+        env:
+          PYTHONPATH: backend
+        run: |
+          python -c "from app.lambda_handler import handler; assert callable(handler)"
+
+      - name: Run HTTP Integration and Engine Benchmark
+        run: python scripts/verify_project.py
+
+      - name: Upload Verification Evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: verification-results
+          path: docs/TEST_RESULTS.*
 
   build-frontend:
     name: Frontend Build & Asset Verification
@@ -50,7 +77,9 @@ jobs:
 
       - name: Build React Application
         run: |
+          node scripts/test_frontend_api.mjs
           cd frontend
+          npm run lint
           npm run build
 
   terraform-check:
@@ -76,3 +105,66 @@ jobs:
       - name: Terraform Validation
         run: |
           terraform -chdir=terraform validate
+
+  deploy-aws:
+    name: Deploy API and Web Application
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    needs: [test-backend, build-frontend, terraform-check]
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.7.0"
+          terraform_wrapper: false
+
+      - name: Deploy AWS Infrastructure
+        run: |
+          terraform -chdir=terraform init -input=false \
+            -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
+            -backend-config="key=audio-architecture/terraform.tfstate" \
+            -backend-config="region=us-east-1" \
+            -backend-config="encrypt=true"
+          terraform -chdir=terraform apply -auto-approve -input=false
+
+      - name: Read Deployment Outputs
+        id: infrastructure
+        run: |
+          echo "api_url=$(terraform -chdir=terraform output -raw api_gateway_endpoint)" >> "$GITHUB_OUTPUT"
+          echo "frontend_bucket=$(terraform -chdir=terraform output -raw frontend_bucket_name)" >> "$GITHUB_OUTPUT"
+          echo "distribution_id=$(terraform -chdir=terraform output -raw frontend_cloudfront_distribution_id)" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build Frontend for AWS API
+        env:
+          VITE_API_BASE_URL: ${{ steps.infrastructure.outputs.api_url }}
+        run: |
+          npm ci --prefix frontend
+          npm run build --prefix frontend
+
+      - name: Publish Frontend
+        run: |
+          aws s3 sync frontend/dist "s3://${{ steps.infrastructure.outputs.frontend_bucket }}" --delete
+          aws cloudfront create-invalidation --distribution-id "${{ steps.infrastructure.outputs.distribution_id }}" --paths "/*"
+
+      - name: Smoke Test Deployed API
+        env:
+          API_URL: ${{ steps.infrastructure.outputs.api_url }}
+        run: |
+          python scripts/verify_project.py --api-url "$API_URL" --report docs/DEPLOYED_TEST_RESULTS.json

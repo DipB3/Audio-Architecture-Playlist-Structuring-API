@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, FileText, CheckCircle2, Cloud, Server, Database, Layers } from 'lucide-react';
+import { X, FileText } from 'lucide-react';
 
 export default function DocsModal({ isOpen, onClose }) {
   if (!isOpen) return null;

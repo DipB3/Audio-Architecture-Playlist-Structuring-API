@@ -4,7 +4,7 @@ import { exportPlaylist } from '../services/api';
 
 export default function ExportModal({ playlist, onClose }) {
   const [format, setFormat] = useState('m3u');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [exportData, setExportData] = useState(null);
 
@@ -27,7 +27,16 @@ export default function ExportModal({ playlist, onClose }) {
   };
 
   React.useEffect(() => {
-    handleFetchExport('m3u');
+    let active = true;
+    exportPlaylist({
+      playlist,
+      playlist_id: playlist.playlist_id,
+      format: 'm3u'
+    }).then((res) => {
+      if (active) setExportData(res);
+    }).catch((err) => console.error("Export error:", err))
+      .finally(() => active && setLoading(false));
+    return () => { active = false; };
   }, [playlist]);
 
   const handleDownload = () => {

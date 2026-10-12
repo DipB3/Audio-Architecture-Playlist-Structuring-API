@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { SlidersHorizontal, ChevronDown, ChevronUp, Cpu } from 'lucide-react';
+import { ChevronDown, ChevronUp, Cpu } from 'lucide-react';
 
 export default function ParameterControls({ weights, onChangeWeights }) {
   const [isOpen, setIsOpen] = useState(false);

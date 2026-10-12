@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sliders, Plus, RotateCcw, Info } from 'lucide-react';
+import { Sliders, Plus, RotateCcw } from 'lucide-react';
 
 export default function CustomCurveEditor({ customPoints, onChangePoints }) {
   const [points, setPoints] = useState(
