@@ -26,7 +26,7 @@ export async function fetchHealth() {
     catalog_track_count: catalogFallback.length,
     managed_services: [
       "AWS Lambda (Serverless Compute)",
-      "Amazon API Gateway (REST API)",
+      "Amazon API Gateway (HTTP API v2)",
       "Amazon DynamoDB (NoSQL Data & History)",
       "Amazon S3 (Catalog & Export Bundles)",
       "Amazon CloudWatch & AWS Budgets (DevOps & Alerts)"

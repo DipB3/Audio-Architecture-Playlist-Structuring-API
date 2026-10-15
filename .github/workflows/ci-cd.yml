@@ -21,10 +21,11 @@ jobs:
     env:
       LOCAL_ONLY: "1"
       AWS_EC2_METADATA_DISABLED: "true"
-      LOCAL_DATA_DIR: ${{ runner.temp }}/audio-api-tests
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -48,6 +49,8 @@ jobs:
           python -c "from app.lambda_handler import handler; assert callable(handler)"
 
       - name: Run HTTP Integration and Engine Benchmark
+        env:
+          LOCAL_DATA_DIR: ${{ runner.temp }}/audio-api-tests
         run: python scripts/verify_project.py
 
       - name: Upload Verification Evidence
@@ -66,7 +69,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: "npm"
           cache-dependency-path: frontend/package-lock.json
 
@@ -108,7 +111,7 @@ jobs:
 
   deploy-aws:
     name: Deploy API and Web Application
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    if: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') && vars.AWS_DEPLOY_ENABLED == 'true' }}
     needs: [test-backend, build-frontend, terraform-check]
     runs-on: ubuntu-latest
     environment: production
@@ -147,7 +150,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: "npm"
           cache-dependency-path: frontend/package-lock.json
 

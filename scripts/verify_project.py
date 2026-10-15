@@ -9,6 +9,7 @@ import sys
 import tempfile
 import time
 import urllib.request
+from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -88,7 +89,8 @@ def main():
     parser.add_argument("--api-url")
     parser.add_argument("--report", default="docs/TEST_RESULTS.json")
     args = parser.parse_args()
-    results = {"date": "2026-10-12", "environment": "remote" if args.api_url else "local",
+    results = {"date": datetime.now(timezone.utc).date().isoformat(),
+               "environment": "remote" if args.api_url else "local",
                "aws_deployment_verified": False}
     if args.api_url:
         results["http_smoke"] = smoke(args.api_url.rstrip("/"))
@@ -124,32 +126,34 @@ def main():
     results["benchmark"] = benchmark() if not args.api_url else []
     output = ROOT / args.report
     output.write_text(json.dumps(results, indent=2), encoding="utf-8")
-    markdown = [
-        "# Project Verification Results", "",
-        "Verified on 12 October 2026. These results measure the local application.",
-        "AWS deployment and account cost remain unverified.", "",
-        "## Additional verification", "",
-        "37 backend unit tests passed. Frontend service tests, lint and production",
-        "build passed. Terraform formatting and validation passed. The Lambda package",
-        "imports correctly and excludes tests, bytecode and local runtime data.",
-        "Browser interaction verified session controls, generation, saved reload",
-        "and export preview.", "",
-        "## HTTP integration", "",
-        "Health, generation, saved retrieval, history and M3U/JSON/CSV exports passed.",
-        "The session uses a planned eight-second crossfade and disables repeats.", "",
-        "## Original and improved engine", "",
-        "Both engines use the same 48-track catalog and the same three selected genres.",
-        "Duration error uses seconds. Runtime uses milliseconds and depends on the machine.",
-        "The new energy metric integrates three samples per track, so its energy error",
-        "is not directly comparable with the original midpoint metric.", "",
-        "| Minutes | Curve | Original duration error | Improved duration error | Original ms | Improved ms |",
-        "| --- | --- | ---: | ---: | ---: | ---: |",
-    ]
-    for row in results["benchmark"]:
-        old, new = row["original"], row["improved"]
-        markdown.append(f"| {row['duration_minutes']} | {row['curve']} | "
-                        f"{old['duration_error_seconds']} | {new['duration_error_seconds']} | "
-                        f"{old['execution_ms']} | {new['execution_ms']} |")
+    markdown = ["# Project Verification Results", "",
+                f"Verified on {results['date']} ({results['environment']}).", ""]
+    if args.api_url:
+        markdown.extend([
+            "The deployed API passed health, generation, saved retrieval, history",
+            "and M3U/JSON/CSV export checks. DynamoDB and S3 health checks passed.",
+            "The session used a planned eight-second crossfade without repeats.",
+            "Account charges and frontend browser behavior were not checked by this run.",
+        ])
+    else:
+        markdown.extend([
+            "These results measure the local application. AWS deployment and account",
+            "cost remain unverified.", "", "## HTTP integration", "",
+            "Health, generation, saved retrieval, history and M3U/JSON/CSV exports passed.",
+            "The session used a planned eight-second crossfade without repeats.", "",
+            "## Original and improved engine", "",
+            "Both engines use the same 48-track catalog and three selected genres.",
+            "Duration error uses seconds. Runtime uses milliseconds and depends on the machine.",
+            "The new energy metric integrates three samples per track, so its energy error",
+            "is not directly comparable with the original midpoint metric.", "",
+            "| Minutes | Curve | Original duration error | Improved duration error | Original ms | Improved ms |",
+            "| --- | --- | ---: | ---: | ---: | ---: |",
+        ])
+        for row in results["benchmark"]:
+            old, new = row["original"], row["improved"]
+            markdown.append(f"| {row['duration_minutes']} | {row['curve']} | "
+                            f"{old['duration_error_seconds']} | {new['duration_error_seconds']} | "
+                            f"{old['execution_ms']} | {new['execution_ms']} |")
     output.with_suffix(".md").write_text("\n".join(markdown) + "\n", encoding="utf-8")
     print(json.dumps({"http": results["http_smoke"]["status"],
                       "benchmark_cases": len(results["benchmark"]),

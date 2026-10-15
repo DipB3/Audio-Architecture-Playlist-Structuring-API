@@ -251,7 +251,7 @@ where:
 - Formulated the mathematical equations for continuous energy curves \(E(t)\) (Pomodoro, Linear Ascent/Descent, Interval Wave, Steady Flow, Sunset).
 - Developed the Camelot Wheel musical key compatibility engine and cyclic circular distance algorithms.
 - Authored the multi-objective Beam Search optimizer incorporating dynamic duration constraints, tempo Gaussian decay, and genre acoustic bridging.
-- Authored the Python unit testing suite covering curve boundary conditions, optimizer performance, harmonic edge cases, request validation and Lambda import compatibility (24 test cases).
+- Authored the Python unit testing suite covering curve boundary conditions, optimizer performance, harmonic edge cases, request validation and Lambda import compatibility (37 test cases as of 15 October 2026).
 
 ### Vaibhav Bhatia (Registration No: 240905504)
 - Designed and built the responsive **User Interface Module** using React, Vite, and Tailwind CSS.

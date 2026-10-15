@@ -68,10 +68,12 @@ Create an encrypted, versioned S3 state bucket and a GitHub production
 environment. Configure AWS_DEPLOY_ROLE_ARN and TF_STATE_BUCKET secrets.
 The IAM deployment role must trust GitHub OIDC for this repository's production
 environment and have permission to manage the declared resources and state.
-Add the actual GitHub repository remote before pushing. Require approval on the
-production environment before deployment.
+Set the repository variable `AWS_DEPLOY_ENABLED=true` only after the state bucket,
+role and secrets exist. Require approval on the production environment before
+deployment. Without this variable, pushes run CI and skip the AWS job.
 
-Pushes to main or master test and deploy the stack. The pipeline builds React
+Pushes to main or master test the stack; deployment requires the enable variable.
+The pipeline builds React
 using the API output, publishes to S3, invalidates CloudFront and checks the
 deployed API, connected storage and exports.
 

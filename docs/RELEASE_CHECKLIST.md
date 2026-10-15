@@ -6,18 +6,20 @@ frontend lint/build and Terraform validation passed.
 
 ## Account setup and release evidence
 
-1. Set the actual GitHub remote and push the reviewed changes.
+1. Repository source is pushed to `main` at
+   `https://github.com/VaibhavBhatia-0/Audio-Architecture-Playlist-Structuring-API`.
 2. Create an encrypted, versioned Terraform state bucket.
 3. Configure GitHub OIDC, an IAM deployment role and the production environment.
 4. Set AWS_DEPLOY_ROLE_ARN and TF_STATE_BUCKET secrets.
 5. Review budget email recipients and require production deployment approval.
-6. Run the pipeline and retain successful integration artifacts.
+6. Set repository variable `AWS_DEPLOY_ENABLED=true`, rerun the pipeline, and
+   retain successful integration artifacts.
 7. Open CloudFront and demonstrate generation, reload and download.
 8. Capture API Gateway, Lambda logs, DynamoDB items, S3 exports and budget
    subscription evidence. Record actual cost.
 
-The checkout has no Git remote or AWS account credentials. A public release
-cannot be verified until those account inputs exist.
+The GitHub remote is connected. AWS account setup is still required; no live
+deployment, cost or storage evidence has been verified.
 
 ## Demo
 

@@ -230,7 +230,7 @@ def handler(event: Dict[str, Any], context: Any = None) -> Dict[str, Any]:
                 "storage_mode": "aws" if storage_db.is_connected and storage_s3.is_connected else "local",
                 "managed_services": [
                     "AWS Lambda (Serverless Compute)",
-                    "Amazon API Gateway (REST API)",
+                    "Amazon API Gateway (HTTP API v2)",
                     "Amazon DynamoDB (NoSQL Data & History)",
                     "Amazon S3 (Catalog & Export Bundles)",
                     "Amazon CloudWatch & AWS Budgets (DevOps & Alerts)"

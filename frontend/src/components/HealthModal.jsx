@@ -58,7 +58,7 @@ export default function HealthModal({ isOpen, onClose }) {
             <div className="flex items-center space-x-3">
               <Activity className="w-4 h-4 text-purple-400" />
               <div>
-                <h4 className="text-xs font-bold text-white">Amazon API Gateway (REST API)</h4>
+                <h4 className="text-xs font-bold text-white">Amazon API Gateway (HTTP API v2)</h4>
                 <p className="text-[10px] text-slate-400">HTTP API v2 Proxy Integration with CORS & Latency Tracing</p>
               </div>
             </div>
