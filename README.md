@@ -73,9 +73,9 @@ role and secrets exist. Require approval on the production environment before
 deployment. Without this variable, pushes run CI and skip the AWS job.
 
 Pushes to main or master test the stack; deployment requires the enable variable.
-The pipeline builds React
-using the API output, publishes to S3, invalidates CloudFront and checks the
-deployed API, connected storage and exports.
+The workflow can also be started manually after account setup. The pipeline
+builds React using the API output, publishes to S3, invalidates CloudFront and
+checks the deployed API, connected storage and exports.
 
 Manual deployment:
 
@@ -98,3 +98,4 @@ spending cap. Actual AWS deployment and costs remain unverified.
 - [Measured test results](docs/TEST_RESULTS.md)
 - [Presentation](deliverables/Audio_Architecture_Presentation.pptx)
 - [Release checklist](docs/RELEASE_CHECKLIST.md)
+- [AWS account setup](docs/AWS_SETUP.md)

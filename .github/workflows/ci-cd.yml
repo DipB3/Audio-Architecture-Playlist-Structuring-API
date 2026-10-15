@@ -9,6 +9,7 @@ concurrency:
   cancel-in-progress: false
 
 on:
+  workflow_dispatch:
   push:
     branches: [ "main", "master", "develop" ]
   pull_request:
@@ -111,7 +112,7 @@ jobs:
 
   deploy-aws:
     name: Deploy API and Web Application
-    if: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') && vars.AWS_DEPLOY_ENABLED == 'true' }}
+    if: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') && vars.AWS_DEPLOY_ENABLED == 'true' }}
     needs: [test-backend, build-frontend, terraform-check]
     runs-on: ubuntu-latest
     environment: production
@@ -171,3 +172,9 @@ jobs:
           API_URL: ${{ steps.infrastructure.outputs.api_url }}
         run: |
           python scripts/verify_project.py --api-url "$API_URL" --report docs/DEPLOYED_TEST_RESULTS.json
+
+      - name: Upload Deployed Verification Evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployed-verification-results
+          path: docs/DEPLOYED_TEST_RESULTS.*

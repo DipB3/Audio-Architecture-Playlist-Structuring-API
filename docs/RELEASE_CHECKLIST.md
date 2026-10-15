@@ -12,7 +12,7 @@ frontend lint/build and Terraform validation passed.
 3. Configure GitHub OIDC, an IAM deployment role and the production environment.
 4. Set AWS_DEPLOY_ROLE_ARN and TF_STATE_BUCKET secrets.
 5. Review budget email recipients and require production deployment approval.
-6. Set repository variable `AWS_DEPLOY_ENABLED=true`, rerun the pipeline, and
+6. Set repository variable `AWS_DEPLOY_ENABLED=true`, run the workflow manually, and
    retain successful integration artifacts.
 7. Open CloudFront and demonstrate generation, reload and download.
 8. Capture API Gateway, Lambda logs, DynamoDB items, S3 exports and budget
@@ -20,6 +20,7 @@ frontend lint/build and Terraform validation passed.
 
 The GitHub remote is connected. AWS account setup is still required; no live
 deployment, cost or storage evidence has been verified.
+Follow [AWS setup](AWS_SETUP.md) for the exact account inputs and release sequence.
 
 ## Demo
 
