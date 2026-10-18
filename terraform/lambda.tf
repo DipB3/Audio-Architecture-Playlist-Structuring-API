@@ -32,9 +32,9 @@ resource "aws_lambda_function" "audio_engine" {
 
   environment {
     variables = {
-      DYNAMODB_TABLE_NAME = aws_dynamodb_table.audio_architectures.name
+      DYNAMODB_TABLE_NAME      = aws_dynamodb_table.audio_architectures.name
       CUSTOM_TRACKS_TABLE_NAME = aws_dynamodb_table.custom_tracks.name
-      S3_BUCKET_NAME      = aws_s3_bucket.audio_assets.id
+      S3_BUCKET_NAME           = aws_s3_bucket.audio_assets.id
     }
   }
 
