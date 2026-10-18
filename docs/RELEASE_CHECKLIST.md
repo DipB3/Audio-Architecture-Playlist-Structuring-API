@@ -2,8 +2,9 @@
 
 The four synopsis modules, presentation and measured test report are included.
 Engine constraints, custom-track CRUD, HTTP integration, browser generation,
-frontend lint/build passed locally. The updated Terraform configuration still
-requires CI validation and an AWS deployment before release.
+frontend lint/build passed locally. GitHub CI validated the updated Terraform
+configuration on commit `1ea734d`; an AWS deployment is still required before
+claiming a live release.
 
 ## Account setup and release evidence
 

@@ -27,9 +27,10 @@ handoff for the repository, not evidence of a live cloud endpoint.
   optimizer benchmark uses the original 48-track catalog for a fair comparison.
 - Browser walkthrough checked scenario selection, generation and custom-track
   add/remove in the local UI.
-- Terraform CLI is not installed on the current workstation. CI's
-  `terraform fmt`, `init -backend=false` and `validate` jobs must be observed
-  after push; local Terraform validation cannot honestly be claimed here.
+- [GitHub Actions run #5](https://github.com/VaibhavBhatia-0/Audio-Architecture-Playlist-Structuring-API/actions/runs/39157878435)
+  for code commit `1ea734d` passed backend, frontend and Terraform quality
+  jobs. The AWS deploy job was skipped by its setup gate. Terraform CLI is
+  unavailable on this workstation, so no local Terraform validation is claimed.
 
 ## Run locally
 
@@ -55,7 +56,7 @@ simpler greedy optimizer; that mode is labeled in the UI.
 3. Configure the GitHub `production` environment with approval protection and
    `AWS_DEPLOY_ROLE_ARN` and `TF_STATE_BUCKET` secrets. Set
    `AWS_DEPLOY_ENABLED=true` only when ready. Never place credentials in Git.
-4. Observe all three CI jobs passing, then run the gated deploy workflow. Record
+4. Keep all three CI jobs passing, then run the gated deploy workflow. Record
    the Terraform `frontend_url` and `api_gateway_endpoint` outputs; run
    `python scripts/verify_project.py --api-url <endpoint>` and check the site
    at desktop and mobile widths. Capture CloudWatch/API/S3/DynamoDB evidence.

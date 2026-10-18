@@ -61,8 +61,9 @@ create/list/delete, generation, retrieval, history and all exports, stops the ga
 docs/TEST_RESULTS.json and docs/TEST_RESULTS.md. It compares the original
 committed engine with the improved engine using identical requests.
 41 backend tests, frontend service tests, lint/build and HTTP checks passed
-locally on 19 October 2026. Terraform validation remains a CI check because
-the Terraform CLI is unavailable on this workstation. See the report for measurements.
+locally on 19 October 2026. GitHub CI also passed its backend, frontend and
+Terraform validation jobs on commit `1ea734d`. The Terraform CLI is unavailable
+on this workstation. See the report for measurements.
 
 ## AWS deployment
 
