@@ -15,10 +15,10 @@ export default function GenreSelector({ genres, selectedGenres, onToggleGenre, o
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <label className="text-sm font-semibold text-slate-200 flex items-center space-x-2">
+        <h3 id="genre-title" className="text-sm font-semibold text-slate-200 flex items-center space-x-2">
           <span>2. Multi-Genre Curation</span>
           <span className="text-xs font-normal text-slate-400">(Acoustic Bridging)</span>
-        </label>
+        </h3>
         <button
           onClick={onSelectAll}
           className="text-xs text-cyan-400 hover:text-cyan-300 font-medium transition-colors"
@@ -27,16 +27,16 @@ export default function GenreSelector({ genres, selectedGenres, onToggleGenre, o
         </button>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
+      <div role="group" aria-labelledby="genre-title" className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
         {genres.map((g) => {
           const isSelected = selectedGenres.includes(g.name);
           const colorClass = GENRE_COLORS[g.name] || "from-slate-700/20 to-slate-800/20 text-slate-300 border-slate-700";
 
           return (
-            <div
+            <button type="button" aria-pressed={isSelected}
               key={g.name}
               onClick={() => onToggleGenre(g.name)}
-              className={`cursor-pointer rounded-xl p-3 border transition-all duration-200 flex flex-col justify-between ${
+              className={`text-left cursor-pointer rounded-xl p-3 border transition-all duration-200 flex flex-col justify-between ${
                 isSelected
                   ? `bg-gradient-to-br ${colorClass} ring-1 ring-cyan-500 shadow-md`
                   : 'bg-slate-900/60 border-slate-800 hover:border-slate-700 hover:bg-slate-850 opacity-70'
@@ -56,7 +56,7 @@ export default function GenreSelector({ genres, selectedGenres, onToggleGenre, o
                 <span>{Math.round(g.avg_energy * 100)}% E</span>
                 <span>{g.track_count} trks</span>
               </div>
-            </div>
+            </button>
           );
         })}
       </div>

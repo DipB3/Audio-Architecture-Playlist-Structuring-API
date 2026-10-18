@@ -16,9 +16,9 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 
-def request(base, path, payload=None):
+def request(base, path, payload=None, method=None):
     data = json.dumps(payload).encode() if payload is not None else None
-    req = urllib.request.Request(base + path, data=data,
+    req = urllib.request.Request(base + path, data=data, method=method,
                                  headers={"Content-Type": "application/json"})
     with urllib.request.urlopen(req, timeout=30) as response:
         return json.load(response)
@@ -26,7 +26,18 @@ def request(base, path, payload=None):
 
 def smoke(base):
     health = request(base, "/health")
-    assert health["catalog_track_count"] == 48
+    assert health["catalog_track_count"] >= 118
+    created = request(base, "/tracks/custom", {
+        "title": "Verification Song", "artist": "QA Ensemble", "genre": "Verification",
+        "duration_seconds": 210, "bpm": 118, "energy": .62,
+        "camelot_code": "8B", "musical_key": "C Major",
+    })["track"]
+    try:
+        custom = request(base, "/tracks/custom")["tracks"]
+        assert any(track["id"] == created["id"] for track in custom)
+        assert any(item["name"] == "Verification" for item in request(base, "/genres")["genres"])
+    finally:
+        request(base, "/tracks/custom/" + created["id"], method="DELETE")
     generated = request(base, "/playlists/generate", {
         "target_duration_minutes": 30,
         "selected_genres": ["Contemporary Classical Piano", "Indie Pop", "Hip-Hop"],
@@ -54,8 +65,10 @@ def smoke(base):
 def benchmark():
     from backend.app.engine.models import Track
     from backend.app.engine.optimizer import PlaylistOptimizer
-    tracks = [Track.from_dict(item) for item in json.loads(
-        (ROOT / "backend/app/data/track_catalog.json").read_text())]
+    baseline_catalog = subprocess.check_output(
+        ["git", "show", "875804d767890211dafa5a97126fdd909044136c:backend/app/data/track_catalog.json"],
+        cwd=ROOT, text=True)
+    tracks = [Track.from_dict(item) for item in json.loads(baseline_catalog)]
     # The original committed engine supplies the comparison, not invented numbers.
     source = subprocess.check_output(
         ["git", "show", "875804d767890211dafa5a97126fdd909044136c:backend/app/engine/optimizer.py"],
@@ -139,10 +152,11 @@ def main():
         markdown.extend([
             "These results measure the local application. AWS deployment and account",
             "cost remain unverified.", "", "## HTTP integration", "",
-            "Health, generation, saved retrieval, history and M3U/JSON/CSV exports passed.",
+            "Health, custom-track create/list/delete, generation, saved retrieval, history and M3U/JSON/CSV exports passed.",
             "The session used a planned eight-second crossfade without repeats.", "",
             "## Original and improved engine", "",
-            "Both engines use the same 48-track catalog and three selected genres.",
+            "For a fair historical comparison, both engines use the original 48-track catalog and three selected genres.",
+            "The live demo catalog contains at least 118 tracks.",
             "Duration error uses seconds. Runtime uses milliseconds and depends on the machine.",
             "The new energy metric integrates three samples per track, so its energy error",
             "is not directly comparable with the original midpoint metric.", "",

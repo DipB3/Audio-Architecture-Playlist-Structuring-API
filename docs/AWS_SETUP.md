@@ -33,8 +33,10 @@ skips its AWS job until the repository variable `AWS_DEPLOY_ENABLED` is `true`.
    AWS Billing for actual charges. Budget notifications are alerts, not a cap.
 
 The deployed API is a shared guest demo. Its `user_id` field does not authenticate
-callers or isolate private histories. Add authentication before storing personal
-or private playlists.
+callers or isolate private histories. The custom-track catalog is likewise
+shared across visitors. Terraform creates two DynamoDB tables: playlist history
+and custom tracks. Add authentication, per-user authorization, restricted CORS
+and abuse controls before storing personal or private playlists or song metadata.
 
 References: [AWS guidance for GitHub OIDC roles](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-idp_oidc.html),
 [AWS guidance for S3 Terraform state](https://docs.aws.amazon.com/prescriptive-guidance/latest/terraform-aws-provider-best-practices/backend.html),

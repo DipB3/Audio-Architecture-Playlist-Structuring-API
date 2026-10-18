@@ -1,8 +1,9 @@
 # Release and Presentation Checklist
 
 The four synopsis modules, presentation and measured test report are included.
-Engine constraints, HTTP integration, browser generation/history/export preview,
-frontend lint/build and Terraform validation passed.
+Engine constraints, custom-track CRUD, HTTP integration, browser generation,
+frontend lint/build passed locally. The updated Terraform configuration still
+requires CI validation and an AWS deployment before release.
 
 ## Account setup and release evidence
 
@@ -28,3 +29,5 @@ Choose a 30-minute session and custom curve. Set genres and BPM bounds.
 Exclude a track, generate, inspect fit and transitions, reload the saved session
 and export M3U, JSON and CSV. Explain that previews synthesize motifs and M3U
 references require supplied recordings.
+Then add a fictional custom song, select its genre, generate a second session,
+and remove it from the live catalog. Saved playlists retain their snapshots.

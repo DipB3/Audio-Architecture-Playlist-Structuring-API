@@ -19,8 +19,13 @@ the Python API, storage adapters and exporters implement the four synopsis modul
 - Full target curve visualization, measured metrics and feasibility warnings.
 - M3U, JSON and CSV exports, with private S3 download links in cloud mode.
 - Synthesized previews and a clearly identified browser fallback.
+- Four one-click scenario starters (deep work, movement, evening reset and
+  open-format mix), plus an accessible custom-track metadata form and catalog
+  exclusions.
 
-The catalog contains 48 demonstration metadata records across seven genres.
+The catalog contains 118 deterministic, fictional demonstration metadata records
+across seven genres. Custom tracks are stored on local disk in development,
+browser storage in offline mode, or a dedicated DynamoDB table on AWS.
 The repository does not contain audio recordings. Previews synthesize motifs.
 M3U paths require corresponding user-supplied recordings. Crossfade settings plan
 overlap; the application does not render an audio mix.
@@ -51,12 +56,13 @@ terraform -chdir=terraform fmt -check
 terraform -chdir=terraform validate
 ```
 
-The integration verifier starts an isolated gateway, checks generation,
-retrieval, history and all exports, stops the gateway, and writes
+The integration verifier starts an isolated gateway, checks custom-track
+create/list/delete, generation, retrieval, history and all exports, stops the gateway, and writes
 docs/TEST_RESULTS.json and docs/TEST_RESULTS.md. It compares the original
 committed engine with the improved engine using identical requests.
-37 backend tests, frontend service tests, lint/build, HTTP checks and Terraform
-validation passed on 12 October 2026. See the report for measurements.
+41 backend tests, frontend service tests, lint/build and HTTP checks passed
+locally on 19 October 2026. Terraform validation remains a CI check because
+the Terraform CLI is unavailable on this workstation. See the report for measurements.
 
 ## AWS deployment
 
@@ -96,6 +102,7 @@ spending cap. Actual AWS deployment and costs remain unverified.
 - [Mathematical formulation](docs/MATHEMATICAL_FORMULATION.md)
 - [API specification](docs/API_SPECIFICATION.md)
 - [Measured test results](docs/TEST_RESULTS.md)
-- [Presentation](deliverables/Audio_Architecture_Presentation.pptx)
+- [Updated presentation](deliverables/Audio_Architecture_Presentation_Final.pptx)
 - [Release checklist](docs/RELEASE_CHECKLIST.md)
 - [AWS account setup](docs/AWS_SETUP.md)
+- [Deployment and deliverables status](DEPLOYMENT.md)

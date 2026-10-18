@@ -49,6 +49,7 @@ resource "aws_iam_policy" "lambda_dynamodb_policy" {
         Effect = "Allow"
         Action = [
           "dynamodb:GetItem",
+          "dynamodb:DescribeTable",
           "dynamodb:PutItem",
           "dynamodb:UpdateItem",
           "dynamodb:DeleteItem",
@@ -57,7 +58,8 @@ resource "aws_iam_policy" "lambda_dynamodb_policy" {
         ]
         Resource = [
           aws_dynamodb_table.audio_architectures.arn,
-          "${aws_dynamodb_table.audio_architectures.arn}/index/*"
+          "${aws_dynamodb_table.audio_architectures.arn}/index/*",
+          aws_dynamodb_table.custom_tracks.arn
         ]
       }
     ]

@@ -131,7 +131,7 @@ export default function EnergyCurveVisualizer({ playlist, activeTrackId, onTrack
           </div>
         )}
 
-        <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="w-full h-auto overflow-visible select-none">
+        <svg role="img" aria-label={`Energy chart showing ${trajectory.length} track points, target versus actual energy. Detailed values are available in the track table below.`} viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="w-full h-auto overflow-visible select-none">
           <defs>
             <linearGradient id="targetGlow" x1="0" y1="0" x2="1" y2="0">
               <stop offset="0%" stopColor="#06b6d4" />

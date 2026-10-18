@@ -46,6 +46,11 @@ def export_to_csv(playlist: StructuredPlaylist) -> str:
     """Exports tracklist and trajectory data to CSV string."""
     output = io.StringIO()
     writer = csv.writer(output)
+    def safe_cell(value):
+        """Prevent spreadsheet formula execution for user-supplied metadata."""
+        if isinstance(value, str) and value.lstrip().startswith(("=", "+", "-", "@")):
+            return "'" + value
+        return value
 
     # Header
     writer.writerow([
@@ -71,7 +76,7 @@ def export_to_csv(playlist: StructuredPlaylist) -> str:
         target_e = traj_point.target_energy if traj_point else ""
         delta_e = traj_point.energy_delta if traj_point else ""
 
-        writer.writerow([
+        writer.writerow([safe_cell(cell) for cell in [
             i + 1,
             track.id,
             track.title,
@@ -87,6 +92,6 @@ def export_to_csv(playlist: StructuredPlaylist) -> str:
             track.valence,
             track.acousticness,
             track.danceability
-        ])
+        ]])
 
     return output.getvalue()

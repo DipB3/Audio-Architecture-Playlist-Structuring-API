@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { X, Download, Copy, Check, FileCode, FileSpreadsheet, Music } from 'lucide-react';
 import { exportPlaylist } from '../services/api';
+import useDialogFocus from './useDialogFocus';
 
 export default function ExportModal({ playlist, onClose }) {
+  const dialogRef = useDialogFocus(true, onClose);
   const [format, setFormat] = useState('m3u');
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
@@ -61,12 +63,12 @@ export default function ExportModal({ playlist, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="export-title" className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
         
         {/* Header */}
         <div className="p-4 border-b border-slate-800 flex items-center justify-between">
           <div>
-            <h3 className="text-base font-bold text-white flex items-center space-x-2">
+            <h3 id="export-title" className="text-base font-bold text-white flex items-center space-x-2">
               <Download className="w-5 h-5 text-cyan-400" />
               <span>Export Audio Architecture Structure</span>
             </h3>
@@ -76,6 +78,7 @@ export default function ExportModal({ playlist, onClose }) {
           </div>
           <button
             onClick={onClose}
+            aria-label="Close export dialog"
             className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
           >
             <X className="w-5 h-5" />
@@ -93,7 +96,7 @@ export default function ExportModal({ playlist, onClose }) {
             }`}
           >
             <Music className="w-3.5 h-3.5" />
-            <span>Extended M3U8 (VLC / DJ)</span>
+            <span>Extended M3U (VLC / DJ)</span>
           </button>
 
           <button

@@ -71,6 +71,9 @@ class LocalAPIGatewayHandler(BaseHTTPRequestHandler):
     def do_POST(self):
         self._dispatch("POST")
 
+    def do_DELETE(self):
+        self._dispatch("DELETE")
+
     def log_message(self, format, *args):
         logger.info("%s - - %s", self.address_string(), format % args)
 

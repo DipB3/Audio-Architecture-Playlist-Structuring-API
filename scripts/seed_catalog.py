@@ -743,12 +743,44 @@ TRACKS = [
     }
 ]
 
+EXTRA_TITLES = {
+    "Contemporary Classical Piano": ["First Light", "Paper Lanterns", "Quiet Window", "Glass Garden", "Rain Study", "Still Water", "Moonlit Keys", "Winter Letter", "Soft Horizon", "After the Bell"],
+    "Indie Pop": ["Postcard Summer", "City Bicycle", "Golden Hour Again", "Late Train Home", "Color Parade", "Open Highway", "Little Satellites", "Sidewalk Stories", "Satellite Hearts", "Morning Avenue"],
+    "Hip-Hop": ["Blue Hour Beat", "Corner Cipher", "Slow Motion Lines", "Metro Verse", "Neon Notebook", "Rhythm Atlas", "Concrete Sunrise", "Pocket Groove", "Midnight Draft", "Next Station"],
+    "Ambient": ["Low Tide", "Cloud Memory", "Weightless", "Boreal Air", "Drifting North", "Empty Shore", "Deep Blue Room", "Slow Orbit", "Hushed Valley", "Distant Rain"],
+    "Deep House": ["Night Current", "Afterglow Circuit", "Poolside Pulse", "Blue Frequency", "Silver Motion", "Glass Floor", "Coastal Loop", "Heat Signal", "Velvet Transit", "First Break"],
+    "Neo-Soul": ["Sunday Table", "Velvet Morning", "Warm Brass", "Small Hours", "Honeylight", "Open Hands", "Slow Bloom", "Brownstone", "Easy Conversation", "Copper Sky"],
+    "Synthwave": ["Magnetic Roads", "Pixel Sunset", "Midnight Arcade", "Highway 84", "Electric Rain", "Afterimage", "Laser Orchard", "Chrome Reverie", "Violet Drive", "Night Signal"],
+}
+
+
+def expanded_tracks():
+    """Add reproducible fictional metadata across tempo/energy/genre test cases."""
+    tracks = list(TRACKS)
+    templates = {}
+    for track in TRACKS:
+        templates.setdefault(track["genre"], []).append(track)
+    for genre, titles in EXTRA_TITLES.items():
+        seeds = templates[genre]
+        for index, title in enumerate(titles):
+            source = seeds[index % len(seeds)]
+            track = dict(source)
+            track["id"] = f"trk_demo_{len(tracks) + 1:03d}"
+            track["title"] = title
+            track["artist"] = f"{genre.split()[0]} Ensemble"
+            track["duration_seconds"] = 165 + ((index * 29 + len(genre)) % 110)
+            track["bpm"] = round(max(45, min(190, source["bpm"] + (index % 5 - 2) * 3)), 1)
+            track["energy"] = round(max(.12, min(.95, source["energy"] + (index % 4 - 1.5) * .06)), 2)
+            tracks.append(track)
+    return tracks
+
+
 def main():
     target_path = Path(__file__).resolve().parent.parent / "backend" / "app" / "data" / "track_catalog.json"
     target_path.parent.mkdir(parents=True, exist_ok=True)
     with open(target_path, "w", encoding="utf-8") as f:
-        json.dump(TRACKS, f, indent=2)
-    print(f"Generated track catalog with {len(TRACKS)} tracks at {target_path}")
+        json.dump(expanded_tracks(), f, indent=2)
+    print(f"Generated track catalog with {len(expanded_tracks())} tracks at {target_path}")
 
 if __name__ == "__main__":
     main()

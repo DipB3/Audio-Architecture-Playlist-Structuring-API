@@ -34,3 +34,22 @@ resource "aws_dynamodb_table" "audio_architectures" {
     Name = "AudioArchitectures-Table"
   }
 }
+
+resource "aws_dynamodb_table" "custom_tracks" {
+  name         = "${local.name_prefix}-custom-tracks"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "id"
+
+  attribute {
+    name = "id"
+    type = "S"
+  }
+
+  point_in_time_recovery {
+    enabled = true
+  }
+
+  tags = {
+    Name = "AudioArchitecture-CustomTracks"
+  }
+}

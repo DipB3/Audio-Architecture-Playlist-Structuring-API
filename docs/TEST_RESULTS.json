@@ -1,24 +1,24 @@
 {
-  "date": "2026-10-12",
+  "date": "2026-10-18",
   "environment": "local",
   "aws_deployment_verified": false,
   "http_smoke": {
     "status": "passed",
     "track_count": 9,
     "metrics": {
-      "overall_fit_score": 0.921,
-      "avg_energy_error": 0.087,
-      "tempo_smoothness_score": 0.83,
+      "overall_fit_score": 0.964,
+      "avg_energy_error": 0.072,
+      "tempo_smoothness_score": 0.97,
       "harmonic_compatibility_rate": 100.0,
       "genre_diversity_count": 3,
-      "duration_accuracy_percent": 99.17
+      "duration_accuracy_percent": 99.83
     },
     "diagnostics": {
       "engine": "duration-aware-beam-v2",
-      "execution_ms": 57.88,
-      "candidate_evaluations": 2076,
-      "eligible_track_count": 24,
-      "duration_error_seconds": -15.0,
+      "execution_ms": 129.31,
+      "candidate_evaluations": 5346,
+      "eligible_track_count": 54,
+      "duration_error_seconds": -3.0,
       "repeat_count": 0,
       "crossfade_seconds": 8.0,
       "warnings": [],
@@ -436,13 +436,13 @@
       "duration_minutes": 20,
       "curve": "pomodoro_peak",
       "original": {
-        "execution_ms": 3.71,
+        "execution_ms": 3.16,
         "duration_error_seconds": 8,
         "harmonic_percent": 100.0,
         "genre_count": 3
       },
       "improved": {
-        "execution_ms": 44.05,
+        "execution_ms": 35.47,
         "duration_error_seconds": 8,
         "harmonic_percent": 100.0,
         "genre_count": 3
@@ -452,13 +452,13 @@
       "duration_minutes": 20,
       "curve": "linear_ascent",
       "original": {
-        "execution_ms": 2.99,
+        "execution_ms": 3.3,
         "duration_error_seconds": 2,
         "harmonic_percent": 100.0,
         "genre_count": 2
       },
       "improved": {
-        "execution_ms": 34.23,
+        "execution_ms": 31.99,
         "duration_error_seconds": 2,
         "harmonic_percent": 100.0,
         "genre_count": 2
@@ -468,13 +468,13 @@
       "duration_minutes": 20,
       "curve": "wave_interval",
       "original": {
-        "execution_ms": 3.46,
+        "execution_ms": 2.95,
         "duration_error_seconds": 43,
         "harmonic_percent": 100.0,
         "genre_count": 3
       },
       "improved": {
-        "execution_ms": 42.8,
+        "execution_ms": 37.77,
         "duration_error_seconds": 2,
         "harmonic_percent": 100.0,
         "genre_count": 3
@@ -484,13 +484,13 @@
       "duration_minutes": 45,
       "curve": "pomodoro_peak",
       "original": {
-        "execution_ms": 6.81,
+        "execution_ms": 6.03,
         "duration_error_seconds": 21,
         "harmonic_percent": 100.0,
         "genre_count": 3
       },
       "improved": {
-        "execution_ms": 59.58,
+        "execution_ms": 56.33,
         "duration_error_seconds": 4,
         "harmonic_percent": 100.0,
         "genre_count": 3
@@ -500,13 +500,13 @@
       "duration_minutes": 45,
       "curve": "linear_ascent",
       "original": {
-        "execution_ms": 6.31,
+        "execution_ms": 5.33,
         "duration_error_seconds": 39,
         "harmonic_percent": 100.0,
         "genre_count": 3
       },
       "improved": {
-        "execution_ms": 44.28,
+        "execution_ms": 40.65,
         "duration_error_seconds": 1,
         "harmonic_percent": 100.0,
         "genre_count": 3
@@ -516,13 +516,13 @@
       "duration_minutes": 45,
       "curve": "wave_interval",
       "original": {
-        "execution_ms": 5.89,
+        "execution_ms": 5.76,
         "duration_error_seconds": 12,
         "harmonic_percent": 100.0,
         "genre_count": 3
       },
       "improved": {
-        "execution_ms": 63.03,
+        "execution_ms": 54.23,
         "duration_error_seconds": 25,
         "harmonic_percent": 100.0,
         "genre_count": 3
@@ -532,13 +532,13 @@
       "duration_minutes": 90,
       "curve": "pomodoro_peak",
       "original": {
-        "execution_ms": 11.2,
+        "execution_ms": 8.41,
         "duration_error_seconds": 81,
         "harmonic_percent": 96.0,
         "genre_count": 3
       },
       "improved": {
-        "execution_ms": 158.8,
+        "execution_ms": 110.41,
         "duration_error_seconds": 4,
         "harmonic_percent": 96.0,
         "genre_count": 3
@@ -548,13 +548,13 @@
       "duration_minutes": 90,
       "curve": "linear_ascent",
       "original": {
-        "execution_ms": 15.07,
+        "execution_ms": 9.26,
         "duration_error_seconds": 3,
         "harmonic_percent": 96.0,
         "genre_count": 3
       },
       "improved": {
-        "execution_ms": 129.8,
+        "execution_ms": 100.25,
         "duration_error_seconds": 8,
         "harmonic_percent": 96.0,
         "genre_count": 3
@@ -564,13 +564,13 @@
       "duration_minutes": 90,
       "curve": "wave_interval",
       "original": {
-        "execution_ms": 13.42,
+        "execution_ms": 8.6,
         "duration_error_seconds": 4,
         "harmonic_percent": 96.0,
         "genre_count": 3
       },
       "improved": {
-        "execution_ms": 138.46,
+        "execution_ms": 121.78,
         "duration_error_seconds": 4,
         "harmonic_percent": 96.0,
         "genre_count": 3
@@ -580,13 +580,13 @@
       "duration_minutes": 180,
       "curve": "pomodoro_peak",
       "original": {
-        "execution_ms": 25.66,
+        "execution_ms": 22.65,
         "duration_error_seconds": 5,
         "harmonic_percent": 100.0,
         "genre_count": 3
       },
       "improved": {
-        "execution_ms": 375.21,
+        "execution_ms": 356.21,
         "duration_error_seconds": 8,
         "harmonic_percent": 100.0,
         "genre_count": 3
@@ -596,13 +596,13 @@
       "duration_minutes": 180,
       "curve": "linear_ascent",
       "original": {
-        "execution_ms": 34.03,
+        "execution_ms": 24.32,
         "duration_error_seconds": 91,
         "harmonic_percent": 100.0,
         "genre_count": 3
       },
       "improved": {
-        "execution_ms": 354.67,
+        "execution_ms": 314.09,
         "duration_error_seconds": 5,
         "harmonic_percent": 100.0,
         "genre_count": 3
@@ -612,13 +612,13 @@
       "duration_minutes": 180,
       "curve": "wave_interval",
       "original": {
-        "execution_ms": 27.02,
+        "execution_ms": 30.65,
         "duration_error_seconds": 40,
         "harmonic_percent": 100.0,
         "genre_count": 3
       },
       "improved": {
-        "execution_ms": 463.64,
+        "execution_ms": 465.35,
         "duration_error_seconds": 9,
         "harmonic_percent": 98.04,
         "genre_count": 3

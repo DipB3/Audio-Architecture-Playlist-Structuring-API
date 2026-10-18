@@ -26,23 +26,23 @@ export default function EnergyCurveSelector({ presets, selectedCurve, onSelectCu
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <label className="text-sm font-semibold text-slate-200 flex items-center space-x-2">
+        <h3 id="curve-title" className="text-sm font-semibold text-slate-200 flex items-center space-x-2">
           <span>1. Energy Profile Architecture</span>
           <span className="text-xs font-normal text-slate-400">(Mathematical Flow Curve)</span>
-        </label>
+        </h3>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+      <div role="group" aria-labelledby="curve-title" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
         {presets.map((preset) => {
           const isSelected = selectedCurve === preset.id;
           const Icon = PRESET_ICONS[preset.id] || Activity;
           const path = CURVE_PATHS[preset.id] || "M 0 20 L 100 20";
 
           return (
-            <div
+            <button type="button" aria-pressed={isSelected}
               key={preset.id}
               onClick={() => onSelectCurve(preset.id)}
-              className={`relative cursor-pointer rounded-xl p-3.5 border transition-all duration-200 flex flex-col justify-between ${
+              className={`relative text-left cursor-pointer rounded-xl p-3.5 border transition-all duration-200 flex flex-col justify-between ${
                 isSelected
                   ? 'bg-slate-800/90 border-cyan-500 shadow-lg shadow-cyan-500/10 ring-1 ring-cyan-500'
                   : 'bg-slate-900/60 border-slate-800 hover:border-slate-700 hover:bg-slate-850'
@@ -70,7 +70,7 @@ export default function EnergyCurveSelector({ presets, selectedCurve, onSelectCu
 
               {/* Sparkline curve preview */}
               <div className="h-10 w-full bg-slate-950/60 rounded-lg p-1.5 flex items-center justify-center border border-slate-800/60">
-                <svg viewBox="0 0 100 40" className="w-full h-full overflow-visible">
+                <svg aria-hidden="true" viewBox="0 0 100 40" className="w-full h-full overflow-visible">
                   <defs>
                     <linearGradient id={`grad-${preset.id}`} x1="0" y1="0" x2="1" y2="0">
                       <stop offset="0%" stopColor="#06b6d4" />
@@ -87,7 +87,7 @@ export default function EnergyCurveSelector({ presets, selectedCurve, onSelectCu
                   />
                 </svg>
               </div>
-            </div>
+            </button>
           );
         })}
       </div>

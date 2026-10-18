@@ -33,7 +33,7 @@ export default function DurationPicker({ duration, onDurationChange }) {
         ))}
 
         <div className="flex-1 min-w-[140px] flex items-center px-2">
-          <input
+          <input aria-label="Session duration in minutes"
             type="range"
             min="15"
             max="180"

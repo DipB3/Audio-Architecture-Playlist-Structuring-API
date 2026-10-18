@@ -9,6 +9,73 @@ const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "http://localhost:800
 // Client-side fallback catalog
 import catalogFallback from "../../../backend/app/data/track_catalog.json";
 
+const CUSTOM_KEY = "audio_arch_custom_tracks";
+function localCustomTracks() {
+  try { return JSON.parse(localStorage.getItem(CUSTOM_KEY) || "[]"); }
+  catch { return []; }
+}
+function offlineCatalog() { return [...catalogFallback, ...localCustomTracks()]; }
+
+export async function fetchTracks() {
+  try {
+    const tracks = [];
+    let total = Infinity;
+    while (tracks.length < total) {
+      const res = await fetch(`${API_BASE_URL}/tracks?limit=500&offset=${tracks.length}`);
+      if (!res.ok) break;
+      const page = await res.json();
+      total = page.total;
+      tracks.push(...page.tracks);
+      if (!page.tracks.length) break;
+    }
+    if (tracks.length === total) return tracks;
+  } catch { /* Offline demo below. */ }
+  return offlineCatalog();
+}
+
+export async function fetchCustomTracks() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/tracks/custom`);
+    if (res.ok) return (await res.json()).tracks;
+  } catch { /* Offline demo below. */ }
+  return localCustomTracks();
+}
+
+export async function addCustomTrack(details) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/tracks/custom`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(details)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || data.error || "Could not add track.");
+    return data.track;
+  } catch (error) {
+    if (error instanceof TypeError) {
+      const track = { ...details, id: `trk_custom_${crypto.randomUUID().replaceAll('-', '')}`,
+        valence: .5, acousticness: .5, danceability: .5, notes: [] };
+      const tracks = localCustomTracks();
+      if (tracks.length >= 500) throw new Error("Custom track limit reached.");
+      localStorage.setItem(CUSTOM_KEY, JSON.stringify([...tracks, track]));
+      return track;
+    }
+    throw error;
+  }
+}
+
+export async function removeCustomTrack(id) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/tracks/custom/${encodeURIComponent(id)}`, { method: "DELETE" });
+    if (!res.ok) throw new Error("Could not delete track.");
+    return;
+  } catch (error) {
+    if (error instanceof TypeError) {
+      localStorage.setItem(CUSTOM_KEY, JSON.stringify(localCustomTracks().filter(track => track.id !== id)));
+      return;
+    }
+    throw error;
+  }
+}
+
 export async function fetchHealth() {
   try {
     const res = await fetch(`${API_BASE_URL}/health`);
@@ -23,7 +90,8 @@ export async function fetchHealth() {
     aws_region: "us-east-1",
     dynamodb_connected: false,
     s3_connected: false,
-    catalog_track_count: catalogFallback.length,
+    catalog_track_count: offlineCatalog().length,
+    custom_track_count: localCustomTracks().length,
     managed_services: [
       "AWS Lambda (Serverless Compute)",
       "Amazon API Gateway (HTTP API v2)",
@@ -47,7 +115,7 @@ export async function fetchGenres() {
 
   // Fallback calculation from local JSON
   const map = {};
-  catalogFallback.forEach(t => {
+  offlineCatalog().forEach(t => {
     if (!map[t.genre]) {
       map[t.genre] = { name: t.genre, track_count: 0, min_bpm: 999, max_bpm: 0, _bpm: 0, _e: 0 };
     }
@@ -362,7 +430,7 @@ function runClientSideOptimizer(params) {
   if (!Number.isFinite(target_duration_minutes) || target_duration_minutes < 15 || target_duration_minutes > 180)
     throw new Error("Duration must be between 15 and 180 minutes.");
   if (min_bpm > max_bpm) throw new Error("Minimum BPM cannot exceed maximum BPM.");
-  let pool = catalogFallback.filter(track => track.bpm >= min_bpm && track.bpm <= max_bpm &&
+  let pool = offlineCatalog().filter(track => track.bpm >= min_bpm && track.bpm <= max_bpm &&
     !excluded_track_ids.includes(track.id));
   if (selected_genres.length > 0) {
     const filtered = pool.filter(t => selected_genres.includes(t.genre));

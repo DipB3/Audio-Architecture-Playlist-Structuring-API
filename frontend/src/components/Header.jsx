@@ -15,8 +15,8 @@ export default function Header({ onOpenHistory, onOpenHealth, onOpenDocs }) {
             <div>
               <div className="flex items-center space-x-2">
                 <h1 className="text-lg font-bold text-white tracking-tight">Audio Architecture & Playlist Structuring API</h1>
-                <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-400 border border-cyan-800">
-                  Cloud Mini-Project
+                <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-200 border border-cyan-800">
+                  Interactive demo
                 </span>
               </div>
               <p className="text-xs text-slate-400">
@@ -36,25 +36,24 @@ export default function Header({ onOpenHistory, onOpenHealth, onOpenDocs }) {
               <span>Vaibhav B. (240905504)</span>
             </div>
 
-            {/* Managed Cloud Services Badge */}
+            {/* Project tools */}
             <div className="flex items-center space-x-1.5">
               <button
                 onClick={onOpenHealth}
-                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-emerald-950/60 border border-emerald-800/80 text-emerald-400 hover:bg-emerald-900/80 text-xs font-medium transition-all"
-                title="View AWS Managed Services & Infrastructure Health"
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-200 hover:bg-slate-700 text-xs font-medium transition-all"
+                title="View runtime and infrastructure status"
               >
                 <Cloud className="w-3.5 h-3.5" />
-                <span>AWS Cloud (4 Services)</span>
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span>System status</span>
               </button>
 
               <button
                 onClick={onOpenHistory}
                 className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-medium transition-all"
-                title="View DynamoDB Generation History"
+                title="View saved generation history"
               >
                 <History className="w-3.5 h-3.5" />
-                <span>DynamoDB History</span>
+                <span>History</span>
               </button>
 
               <button

@@ -114,7 +114,7 @@ sequenceDiagram
     UI->>UI: Render interactive SVG Target vs Actual energy curve
     UI->>UI: Render tracklist table with Camelot harmonic indicators
     User->>UI: Click track preview (Web Audio API synthesizes motif)
-    User->>UI: Clicks "Export Playlist" (selects Extended M3U8)
+    User->>UI: Clicks "Export Playlist" (selects Extended M3U)
     UI->>API: POST /playlists/export (Format: M3U)
     API->>S3: PutObject: Store exports/pl_xxx.m3u
     API-->>UI: 200 OK (Content & S3 URI)
@@ -251,13 +251,13 @@ where:
 - Formulated the mathematical equations for continuous energy curves \(E(t)\) (Pomodoro, Linear Ascent/Descent, Interval Wave, Steady Flow, Sunset).
 - Developed the Camelot Wheel musical key compatibility engine and cyclic circular distance algorithms.
 - Authored the multi-objective Beam Search optimizer incorporating dynamic duration constraints, tempo Gaussian decay, and genre acoustic bridging.
-- Authored the Python unit testing suite covering curve boundary conditions, optimizer performance, harmonic edge cases, request validation and Lambda import compatibility (37 test cases as of 15 October 2026).
+- Authored the Python unit testing suite covering curve boundary conditions, optimizer performance, harmonic edge cases, request validation and Lambda import compatibility (41 test cases as of 19 October 2026).
 
 ### Vaibhav Bhatia (Registration No: 240905504)
 - Designed and built the responsive **User Interface Module** using React, Vite, and Tailwind CSS.
 - Developed the interactive **Energy Curve Visualizer** SVG component mapping target continuous curves against discrete track steps with hover telemetry.
 - Implemented the **Web Audio API Polyphonic Synthesizer** for real-time acoustic preview playback and continuous audio walkthroughs.
-- Created the **Export & Integration Module** supporting Extended M3U8, JSON, and CSV downloads.
+- Created the **Export & Integration Module** supporting Extended M3U, JSON, and CSV downloads.
 
 ---
 
@@ -279,3 +279,24 @@ where:
   terraform plan -var-file="terraform.tfvars.example"
   terraform apply -auto-approve
   ```
+# Implementation update — 19 October 2026
+
+The repository now ships 118 fictional metadata records across the original
+seven genres. Four frontend scenario starters exercise distinct curves and
+genre combinations. Users can add custom track metadata; a local adapter saves
+it in ignored JSON files, while the planned AWS deployment uses a dedicated
+on-demand `custom_tracks` DynamoDB table keyed by `id`. The Lambda role has
+access only to the playlist table, its index, and the custom-track table.
+
+`GET /genres`, `GET /tracks`, optimizer eligibility and exclusions use the
+combined seeded/custom catalog. `GET/POST/DELETE /tracks/custom` implements
+catalog management with bounded metadata validation. Saved playlists retain
+track snapshots. A browser-local fallback supports an offline demonstration.
+
+The frontend now has semantic project sections, keyboard-operable selection
+controls, visible focus, a skip link and accessible dialogs. These changes do
+not establish full WCAG certification; further assistive-technology review is
+recommended before public release. AWS provisioning remains pending account
+setup. The current shared guest model requires authentication and per-user
+authorization before use with private data. See `DEPLOYMENT.md` for the
+verified status and remaining release work.

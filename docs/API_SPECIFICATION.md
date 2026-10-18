@@ -15,6 +15,8 @@ excluded_track_ids (known catalog IDs), allow_repeats (boolean),
 crossfade_seconds (0-30), diversity_strength (0-1), and beam_width (integer 2-32,
 default 12). Empty candidate pools produce 400 errors instead of relaxing
 filters. Genre diversity is a preference rather than guaranteed coverage.
+The seeded catalog contains 118 fictional metadata tracks across seven genres.
+Custom metadata is included in genre statistics and generation immediately.
 
 The returned diagnostics include engine name, execution_ms, candidate_evaluations,
 eligible_track_count, duration_error_seconds, repeat_count, crossfade_seconds,
@@ -41,7 +43,9 @@ All JSON error responses use the form `{"error": "...", "message": "..."}`. Play
   "aws_region": "us-east-1",
   "dynamodb_connected": true,
   "s3_connected": true,
-  "catalog_track_count": 48,
+  "catalog_track_count": 118,
+  "custom_track_count": 0,
+  "storage_mode": "aws",
   "managed_services": [
     "AWS Lambda (Serverless Compute)",
     "Amazon API Gateway (HTTP API v2)",
@@ -51,6 +55,26 @@ All JSON error responses use the form `{"error": "...", "message": "..."}`. Play
   ]
 }
 ```
+
+Cloud health requires both DynamoDB tables and S3 to be connected. Local mode
+reports `storage_mode: "local"` and does not imply an AWS deployment.
+
+### Custom track catalog
+
+`POST /tracks/custom` creates a metadata-only record and returns `201` with
+`{"track": {...}}`. Required fields: `title`, `artist`, `genre` (1–80 characters),
+`duration_seconds` (integer 30–900), `bpm` (40–220), and `energy` (0–1).
+Optional: `camelot_code` (1A–12B, default 8B), `musical_key` (default C Major),
+`valence`, `acousticness`, `danceability` (each 0–1). The server assigns an ID.
+Audio recordings are not uploaded. Control characters are rejected.
+
+`GET /tracks/custom` returns `{"tracks": [...]}`. `DELETE /tracks/custom/{id}`
+deletes a custom catalog entry and returns `{"deleted": "..."}` or 404. The
+limit is 500 custom records per shared demo deployment. Saved playlists retain
+their snapshot even after a track is deleted. `GET /tracks` accepts `limit`
+(1–500) and `offset` (0+), returns total/offset/limit/tracks, and can filter by
+`genre`. The public demo has no per-user authentication; do not use it for
+private audio or personal data.
 
 ---
 

@@ -8,6 +8,7 @@ data "archive_file" "lambda_zip" {
     tolist(fileset("${path.module}/../backend", "requirements*.txt")),
     tolist(fileset("${path.module}/../backend", "**/__pycache__/**")),
     tolist(fileset("${path.module}/../backend", "app/data/saved_playlists/**")),
+    tolist(fileset("${path.module}/../backend", "app/data/custom_tracks/**")),
     tolist(fileset("${path.module}/../backend", "app/data/s3_local_exports/**"))
   )
 }
@@ -32,6 +33,7 @@ resource "aws_lambda_function" "audio_engine" {
   environment {
     variables = {
       DYNAMODB_TABLE_NAME = aws_dynamodb_table.audio_architectures.name
+      CUSTOM_TRACKS_TABLE_NAME = aws_dynamodb_table.custom_tracks.name
       S3_BUCKET_NAME      = aws_s3_bucket.audio_assets.id
     }
   }

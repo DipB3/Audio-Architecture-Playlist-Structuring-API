@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { X, History, ArrowRight } from 'lucide-react';
 import { fetchHistory } from '../services/api';
+import useDialogFocus from './useDialogFocus';
 
 export default function HistoryModal({ isOpen, onClose, onSelectHistoryPlaylist }) {
+  const dialogRef = useDialogFocus(isOpen, onClose);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -19,12 +21,12 @@ export default function HistoryModal({ isOpen, onClose, onSelectHistoryPlaylist 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="history-title" className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
         
         {/* Header */}
         <div className="p-4 border-b border-slate-800 flex items-center justify-between">
           <div>
-            <h3 className="text-base font-bold text-white flex items-center space-x-2">
+            <h3 id="history-title" className="text-base font-bold text-white flex items-center space-x-2">
               <History className="w-5 h-5 text-cyan-400" />
               <span>Saved Generation History</span>
             </h3>
@@ -34,6 +36,7 @@ export default function HistoryModal({ isOpen, onClose, onSelectHistoryPlaylist 
           </div>
           <button
             onClick={onClose}
+            aria-label="Close history dialog"
             className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
           >
             <X className="w-5 h-5" />

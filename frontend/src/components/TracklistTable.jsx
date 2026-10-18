@@ -64,6 +64,7 @@ export default function TracklistTable({ playlist, activeTrackId, onPlayTrack, o
                   <td className="py-3.5 px-3 text-center">
                     <button
                       onClick={() => (isPlaying ? onStopAudio() : onPlayTrack(track))}
+                      aria-label={`${isPlaying ? 'Stop preview of' : 'Play synthesized preview of'} ${track.title} by ${track.artist}`}
                       className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${
                         isPlaying
                           ? 'bg-pink-500 text-white shadow-md shadow-pink-500/40 animate-pulse'

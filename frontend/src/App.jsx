@@ -13,14 +13,25 @@ import HealthModal from './components/HealthModal';
 import DocsModal from './components/DocsModal';
 import AudioPlayerBar from './components/AudioPlayerBar';
 import SessionControls from './components/SessionControls';
+import CustomTrackManager from './components/CustomTrackManager';
 
-import { fetchGenres, fetchPresets, fetchPlaylist, generatePlaylist } from './services/api';
+import { fetchGenres, fetchPresets, fetchPlaylist, fetchCustomTracks, fetchTracks, generatePlaylist } from './services/api';
 import { audioSynth } from './services/audioSynthesizer';
 import { Sparkles, Play, Download, RefreshCw } from 'lucide-react';
+
+const DEMO_SESSIONS = [
+  { name: 'Deep work', description: 'A focused rise, steady peak, and gentle finish.', duration: 45, curve: 'pomodoro_peak', genres: ['Contemporary Classical Piano', 'Ambient', 'Neo-Soul'] },
+  { name: 'Movement', description: 'Interval energy with dance-ready transitions.', duration: 60, curve: 'wave_interval', genres: ['Deep House', 'Synthwave', 'Indie Pop'] },
+  { name: 'Evening reset', description: 'Ease down from a busy day.', duration: 30, curve: 'linear_descent', genres: ['Ambient', 'Contemporary Classical Piano', 'Neo-Soul'] },
+  { name: 'Open-format mix', description: 'Bridge beats, soul, and pop with a custom feel.', duration: 45, curve: 'steady_flow', genres: ['Hip-Hop', 'Neo-Soul', 'Indie Pop'] }
+];
 
 export default function App() {
   const [genres, setGenres] = useState([]);
   const [presets, setPresets] = useState([]);
+  const [customTracks, setCustomTracks] = useState([]);
+  const [catalogTracks, setCatalogTracks] = useState([]);
+  const [catalogCount, setCatalogCount] = useState(0);
   
   // User Selection State
   const [duration, setDuration] = useState(45);
@@ -46,7 +57,7 @@ export default function App() {
 
   // Generated Playlist State
   const [playlist, setPlaylist] = useState(null);
-  const [isGenerating, setIsGenerating] = useState(true);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [sessionName, setSessionName] = useState('');
   const [options, setOptions] = useState({
@@ -66,31 +77,26 @@ export default function App() {
   // Initial Load
   useEffect(() => {
     let active = true;
-    Promise.all([
-      fetchGenres(),
-      fetchPresets(),
-      generatePlaylist({
-        target_duration_minutes: 45,
-        selected_genres: ["Contemporary Classical Piano", "Indie Pop", "Hip-Hop"],
-        curve_type: "pomodoro_peak",
-        custom_points: [],
-        energy_weight: 0.40,
-        tempo_weight: 0.25,
-        harmonic_weight: 0.20,
-        genre_weight: 0.15
-      })
-    ]).then(([gList, pList, initialPlaylist]) => {
+    Promise.all([fetchGenres(), fetchPresets(), fetchCustomTracks(), fetchTracks()]).then(([gList, pList, custom, tracks]) => {
       if (!active) return;
       setGenres(gList);
       setPresets(pList);
-      setPlaylist(initialPlaylist);
+      setCustomTracks(custom);
+      setCatalogTracks(tracks);
+      setCatalogCount(tracks.length);
     }).catch(err => {
       console.error("Initial application load failed:", err);
       if (active) setErrorMessage(err.message || "The application could not be initialized.");
     })
-      .finally(() => active && setIsGenerating(false));
     return () => { active = false; };
   }, []);
+
+  const refreshCatalog = async () => {
+    const [gList, custom, tracks] = await Promise.all([fetchGenres(), fetchCustomTracks(), fetchTracks()]);
+    setGenres(gList); setCustomTracks(custom); setCatalogTracks(tracks); setCatalogCount(tracks.length);
+    const known = new Set(tracks.map(track => track.id));
+    setOptions(current => ({ ...current, excluded_track_ids: current.excluded_track_ids.filter(id => known.has(id)) }));
+  };
 
   const handleGenerate = async () => {
     setIsGenerating(true);
@@ -155,6 +161,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-cyan-500 selection:text-slate-950">
+      <a href="#main-content" className="skip-link">Skip to main content</a>
       
       {/* Top Header */}
       <Header
@@ -164,13 +171,25 @@ export default function App() {
       />
 
       {/* Main Workspace */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 pb-28">
+      <main id="main-content" className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 pb-28">
+        <section aria-labelledby="intro-title" className="overview-panel rounded-2xl border border-cyan-900/60 p-6 sm:p-8">
+          <p className="text-xs uppercase tracking-[.22em] font-bold text-cyan-300">Plan the flow, hear the shape</p>
+          <h2 id="intro-title" className="mt-2 text-2xl sm:text-3xl font-bold tracking-tight text-white">Build a playlist around how you want to feel.</h2>
+          <p className="mt-3 max-w-3xl text-sm sm:text-base text-slate-200">Set a session length, blend genres, and choose an energy journey. The optimizer plans track order using tempo, harmonic compatibility, and energy fit.</p>
+          <div className="mt-5 flex flex-wrap gap-2 text-xs"><span className="overview-stat">{catalogCount || '…'} demo + custom tracks</span><span className="overview-stat">7 energy curves</span><span className="overview-stat">M3U · JSON · CSV exports</span><span className="overview-stat">Metadata-only demo</span></div>
+          <nav aria-label="Project sections" className="mt-5 flex flex-wrap gap-4 text-sm font-semibold"><a href="#session-builder" className="text-cyan-200 hover:text-white">Build a session</a><a href="#custom-tracks" className="text-cyan-200 hover:text-white">Add your songs</a><a href="#project-overview" className="text-cyan-200 hover:text-white">How it works</a></nav>
+        </section>
+
+        <section aria-labelledby="demos-title" className="space-y-3">
+          <div><h2 id="demos-title" className="text-lg font-bold text-white">Try a listening scenario</h2><p className="text-sm text-slate-300">Choose a starting point, adjust anything below, then generate your playlist.</p></div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">{DEMO_SESSIONS.map(demo => <button key={demo.name} type="button" onClick={() => { setDuration(demo.duration); setSelectedCurve(demo.curve); setSelectedGenres(demo.genres); setSessionName(demo.name); }} className="text-left rounded-xl bg-slate-900 border border-slate-700 hover:border-cyan-400 p-4 transition-colors"><strong className="block text-white text-sm">{demo.name}</strong><span className="block mt-1 text-xs text-slate-300">{demo.description}</span><span className="block mt-3 text-xs text-cyan-300">{demo.duration} min · {demo.genres.length} genres</span></button>)}</div>
+        </section>
         
         {/* Module 1: User Interface Module (Input Controls) */}
-        <section className="bg-slate-900/70 border border-slate-800 rounded-2xl p-5 shadow-2xl space-y-5">
+        <section id="session-builder" aria-labelledby="builder-title" className="bg-slate-900/70 border border-slate-700 rounded-2xl p-5 shadow-2xl space-y-5">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-slate-800">
             <div>
-              <h2 className="text-sm font-bold text-white flex items-center space-x-2">
+              <h2 id="builder-title" className="text-sm font-bold text-white flex items-center space-x-2">
                 <Sparkles className="w-4 h-4 text-cyan-400" />
                 <span>Audio Architecture Session Parameters</span>
               </h2>
@@ -230,8 +249,17 @@ export default function App() {
             weights={weights}
             onChangeWeights={(w) => setWeights(w)}
           />
-          <SessionControls options={options} onChange={setOptions} playlist={playlist}
+          <SessionControls options={options} onChange={setOptions} catalog={catalogTracks}
             name={sessionName} onNameChange={setSessionName} />
+        </section>
+
+        <CustomTrackManager genres={genres} tracks={customTracks} onChanged={refreshCatalog} />
+
+        <section id="project-overview" aria-labelledby="project-title" className="grid gap-3 md:grid-cols-3">
+          <h2 id="project-title" className="md:col-span-3 text-lg font-bold text-white">What this project demonstrates</h2>
+          <article className="overview-card"><h3>01 / Structure</h3><p>Seven target energy profiles, duration-aware beam search, transition scores, and tunable weights.</p></article>
+          <article className="overview-card"><h3>02 / Experience</h3><p>Interactive trajectory, track previews, session history, custom metadata, and portable exports.</p></article>
+          <article className="overview-card"><h3>03 / Delivery</h3><p>Local demo today; Terraform and CI/CD prepared for an AWS deployment once account setup is complete.</p></article>
         </section>
 
         {/* Action Bar for Generated Output */}

@@ -9,6 +9,7 @@ import logging
 import math
 import base64
 import re
+import uuid
 from pathlib import Path
 from typing import Dict, Any, List
 
@@ -18,6 +19,7 @@ from .engine.optimizer import PlaylistOptimizer
 from .export.exporters import export_to_m3u, export_to_json, export_to_csv
 from .storage.dynamodb_client import DynamoDBStorage
 from .storage.s3_client import S3Storage
+from .storage.custom_tracks import CustomTrackStorage
 
 # Configure logging
 logger = logging.getLogger()
@@ -42,11 +44,12 @@ def load_catalog() -> List[Track]:
 # Initialize storage adapters
 storage_db = DynamoDBStorage()
 storage_s3 = S3Storage()
+storage_custom = CustomTrackStorage()
 
 CORS_HEADERS = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
-    "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+    "Access-Control-Allow-Methods": "GET,POST,DELETE,OPTIONS",
     "Content-Type": "application/json"
 }
 
@@ -73,7 +76,7 @@ def parse_json_body(event: Dict[str, Any]) -> Dict[str, Any]:
     return payload
 
 
-def validate_generation_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
+def validate_generation_payload(payload: Dict[str, Any], catalog=None) -> Dict[str, Any]:
     """Validate and normalize playlist generation parameters."""
     try:
         duration_min = float(payload.get("target_duration_minutes", 45))
@@ -87,7 +90,7 @@ def validate_generation_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
     genres = payload.get("selected_genres", [])
     if not isinstance(genres, list) or not all(isinstance(item, str) for item in genres):
         raise ValueError("selected_genres must be an array of genre names.")
-    known_genres = {track.genre for track in TRACK_CATALOG}
+    known_genres = {track.genre for track in (catalog if catalog is not None else TRACK_CATALOG)}
     unknown_genres = sorted(set(genres) - known_genres)
     if unknown_genres:
         raise ValueError(f"Unknown genre(s): {', '.join(unknown_genres)}.")
@@ -141,7 +144,7 @@ def validate_generation_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def validate_options(payload):
+def validate_options(payload, catalog=None):
     options = {}
     beam = payload.get("beam_width", 12)
     if isinstance(beam, bool) or not isinstance(beam, int) or not 2 <= beam <= 32:
@@ -166,14 +169,58 @@ def validate_options(payload):
     excluded = payload.get("excluded_track_ids", [])
     if not isinstance(excluded, list) or not all(isinstance(item, str) for item in excluded):
         raise ValueError("excluded_track_ids must be an array of track IDs.")
-    if set(excluded) - {track.id for track in TRACK_CATALOG}:
+    if set(excluded) - {track.id for track in (catalog if catalog is not None else TRACK_CATALOG)}:
         raise ValueError("excluded_track_ids contains unknown tracks.")
     options["excluded_track_ids"] = excluded
     for name in ("name", "user_id"):
         value = payload.get(name)
-        if name in payload and (not isinstance(value, str) or not 1 <= len(value.strip()) <= 120):
+        if name in payload and (not isinstance(value, str) or not 1 <= len(value.strip()) <= 120 or re.search(r"[\x00-\x1f\x7f]", value)):
             raise ValueError(f"{name} must be a non-empty string up to 120 characters.")
     return options
+
+
+def validate_custom_track(payload):
+    """Accept only bounded metadata; never trust client-provided IDs or file paths."""
+    for field in ("title", "artist", "genre"):
+        value = payload.get(field)
+        if not isinstance(value, str) or not 1 <= len(value.strip()) <= 80 or re.search(r"[\x00-\x1f\x7f]", value):
+            raise ValueError(f"{field} must be 1–80 characters.")
+    result = {field: payload[field].strip() for field in ("title", "artist", "genre")}
+    for field, low, high in (("duration_seconds", 30, 900), ("bpm", 40, 220), ("energy", 0, 1)):
+        try:
+            number = float(payload[field])
+        except (KeyError, ValueError, TypeError) as exc:
+            raise ValueError(f"{field} must be a number.") from exc
+        if not math.isfinite(number) or not low <= number <= high:
+            raise ValueError(f"{field} must be between {low} and {high}.")
+        if field == "duration_seconds" and not number.is_integer():
+            raise ValueError("duration_seconds must be a whole number.")
+        result[field] = int(number) if field == "duration_seconds" else number
+    code = payload.get("camelot_code", "8B")
+    if not isinstance(code, str) or not re.fullmatch(r"(?:[1-9]|1[0-2])[AB]", code.upper()):
+        raise ValueError("camelot_code must be 1A–12A or 1B–12B.")
+    result["camelot_code"] = code.upper()
+    key = payload.get("musical_key", "C Major")
+    if not isinstance(key, str) or not 1 <= len(key.strip()) <= 40 or re.search(r"[\x00-\x1f\x7f]", key):
+        raise ValueError("musical_key must be 1–40 characters.")
+    result["musical_key"] = key.strip()
+    for field in ("valence", "acousticness", "danceability"):
+        try:
+            number = float(payload.get(field, .5))
+        except (ValueError, TypeError) as exc:
+            raise ValueError(f"{field} must be a number.") from exc
+        if not math.isfinite(number) or not 0 <= number <= 1:
+            raise ValueError(f"{field} must be between 0 and 1.")
+        result[field] = number
+    result["notes"] = []
+    result["id"] = f"trk_custom_{uuid.uuid4().hex}"
+    return result
+
+
+def combined_catalog():
+    tracks = list(TRACK_CATALOG)
+    tracks.extend(Track.from_dict(item) for item in storage_custom.list_tracks())
+    return tracks
 
 
 def validate_playlist_id(value):
@@ -215,10 +262,11 @@ def handler(event: Dict[str, Any], context: Any = None) -> Dict[str, Any]:
         return make_response(200, {"message": "CORS preflight OK"})
 
     try:
+        catalog = combined_catalog()
         # Route: GET /health
         if http_method == "GET" and norm_path in ("/", "/health"):
             ready = bool(TRACK_CATALOG) and (not os.environ.get("AWS_EXECUTION_ENV") or
-                                            (storage_db.is_connected and storage_s3.is_connected))
+                                            (storage_db.is_connected and storage_s3.is_connected and storage_custom.table is not None))
             return make_response(200 if ready else 503, {
                 "status": "healthy" if ready else "degraded",
                 "service": "Audio Architecture & Playlist Structuring API",
@@ -226,7 +274,8 @@ def handler(event: Dict[str, Any], context: Any = None) -> Dict[str, Any]:
                 "aws_region": os.environ.get("AWS_REGION", "us-east-1"),
                 "dynamodb_connected": storage_db.is_connected,
                 "s3_connected": storage_s3.is_connected,
-                "catalog_track_count": len(TRACK_CATALOG),
+                "catalog_track_count": len(catalog),
+                "custom_track_count": len(catalog) - len(TRACK_CATALOG),
                 "storage_mode": "aws" if storage_db.is_connected and storage_s3.is_connected else "local",
                 "managed_services": [
                     "AWS Lambda (Serverless Compute)",
@@ -240,7 +289,7 @@ def handler(event: Dict[str, Any], context: Any = None) -> Dict[str, Any]:
         # Route: GET /genres
         elif http_method == "GET" and norm_path == "/genres":
             genre_stats = {}
-            for t in TRACK_CATALOG:
+            for t in catalog:
                 if t.genre not in genre_stats:
                     genre_stats[t.genre] = {
                         "name": t.genre,
@@ -280,37 +329,61 @@ def handler(event: Dict[str, Any], context: Any = None) -> Dict[str, Any]:
                 presets_with_previews.append(item)
             return make_response(200, {"presets": presets_with_previews})
 
+        # Route: POST /tracks/custom
+        elif http_method == "POST" and norm_path == "/tracks/custom":
+            if len(catalog) - len(TRACK_CATALOG) >= 500:
+                return make_response(409, {"error": "Custom track limit reached (500)."})
+            track = validate_custom_track(parse_json_body(event))
+            storage_custom.save_track(track)
+            return make_response(201, {"track": track})
+
+        # Route: GET /tracks/custom
+        elif http_method == "GET" and norm_path == "/tracks/custom":
+            return make_response(200, {"tracks": [t.to_dict() for t in catalog if t.id.startswith("trk_custom_")]})
+
+        # Route: DELETE /tracks/custom/{id}
+        elif http_method == "DELETE" and norm_path.startswith("/tracks/custom/"):
+            track_id = norm_path.rsplit("/", 1)[-1]
+            if not re.fullmatch(r"trk_custom_[0-9a-f]{32}", track_id):
+                raise ValueError("Invalid custom track ID.")
+            if not storage_custom.delete_track(track_id):
+                return make_response(404, {"error": "Custom track not found."})
+            return make_response(200, {"deleted": track_id})
+
         # Route: GET /tracks
         elif http_method == "GET" and norm_path == "/tracks":
             params = event.get("queryStringParameters") or {}
             genre_filter = params.get("genre")
-            limit = max(1, min(50, int(params.get("limit", 50))))
+            limit = max(1, min(500, int(params.get("limit", 100))))
+            offset = max(0, int(params.get("offset", 0)))
 
-            tracks_to_return = TRACK_CATALOG
+            tracks_to_return = catalog
             if genre_filter:
                 tracks_to_return = [t for t in tracks_to_return if t.genre.lower() == genre_filter.lower()]
 
             return make_response(200, {
                 "total": len(tracks_to_return),
-                "tracks": [t.to_dict() for t in tracks_to_return[:limit]]
+                "tracks": [t.to_dict() for t in tracks_to_return[offset:offset + limit]],
+                "offset": offset,
+                "limit": limit
             })
 
         # Route: POST /playlists/generate
         elif http_method == "POST" and norm_path == "/playlists/generate":
             payload = parse_json_body(event)
-            validated = validate_generation_payload(payload)
+            validated = validate_generation_payload(payload, catalog)
             duration_min = validated["duration_min"]
             genres = validated["genres"]
             curve_type = validated["curve_type"]
             custom_points = validated["custom_points"]
             weights = validated["weights"]
-            options = validate_options(payload)
+            options = validate_options(payload, catalog)
 
             playlist_name = payload.get("name")
             user_id = payload.get("user_id", "guest_user")
 
             optimizer = PlaylistOptimizer(
-                catalog=TRACK_CATALOG,
+                catalog=catalog,
                 energy_weight=weights[0],
                 tempo_weight=weights[1],
                 harmonic_weight=weights[2],
@@ -431,6 +504,9 @@ def handler(event: Dict[str, Any], context: Any = None) -> Dict[str, Any]:
 
     except ValueError as e:
         return make_response(400, {"error": "Invalid request", "message": str(e)})
+    except RuntimeError as e:
+        logger.error("Storage unavailable: %s", e)
+        return make_response(503, {"error": "Storage unavailable", "message": str(e)})
     except Exception as e:
         logger.exception("Internal error in Lambda handler: %s", str(e))
         return make_response(500, {

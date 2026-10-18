@@ -3,6 +3,8 @@
 .artifact-build/
 backend/app/data/saved_playlists/
 backend/app/data/s3_local_exports/
+backend/app/data/custom_tracks/
+output/
 __pycache__/
 *.py[cod]
 *$py.class
