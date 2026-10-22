@@ -22,6 +22,18 @@ variable "budget_limit_usd" {
   default     = "5.0"
 }
 
+variable "api_throttle_rate_limit" {
+  description = "Steady-state API Gateway request limit per second for all routes"
+  type        = number
+  default     = 5
+}
+
+variable "api_throttle_burst_limit" {
+  description = "Maximum concurrent API Gateway request burst for all routes"
+  type        = number
+  default     = 10
+}
+
 variable "budget_alert_emails" {
   description = "List of email addresses to receive cloud budget overrun notifications"
   type        = list(string)

@@ -1,7 +1,8 @@
 import tempfile
+from decimal import Decimal
 import unittest
 from unittest.mock import patch
-from backend.app.storage.dynamodb_client import DynamoDBStorage, history_summary
+from backend.app.storage.dynamodb_client import DynamoDBStorage, from_dynamo, history_summary
 
 
 class StorageTests(unittest.TestCase):
@@ -20,6 +21,11 @@ class StorageTests(unittest.TestCase):
     def test_cloud_history_summary_contract(self):
         summary = history_summary({"playlist_id": "pl_x", "metrics": {"overall_fit_score": .9}})
         self.assertEqual(summary["overall_fit_score"], .9)
+
+    def test_dynamo_numbers_keep_integer_types(self):
+        item = from_dynamo({"track_count": Decimal("12"), "tracks": [{"energy": Decimal("0.42")}]})
+        self.assertEqual(item, {"track_count": 12, "tracks": [{"energy": 0.42}]})
+        self.assertIsInstance(item["track_count"], int)
 
     def test_cloud_write_does_not_claim_local_persistence(self):
         with tempfile.TemporaryDirectory() as directory:

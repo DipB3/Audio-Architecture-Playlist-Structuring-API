@@ -26,8 +26,13 @@ skips its AWS job until the repository variable `AWS_DEPLOY_ENABLED` is `true`.
    environment secret `TF_STATE_BUCKET`. No long-lived AWS keys are needed.
 5. Review the budget email recipients in `terraform/variables.tf`. Set the
    repository variable `AWS_DEPLOY_ENABLED` to `true`. On the Actions page, run
-   **CI and AWS Deployment - Audio Architecture System** on `main`; approve the
-   `production` environment when prompted. CI runs before Terraform apply.
+   **CI and AWS Deployment - Audio Architecture System** on `main`. After CI
+   passes, approve `production` for **Plan AWS Infrastructure**, read the
+   Terraform plan in that job's run summary, and approve `production` again for
+   **Apply Reviewed Plan** only if the changes are expected. The apply job uses
+   the saved plan, so nothing outside the reviewed plan is changed. The plan
+   artifact is kept for three days and is visible to anyone who can read the
+   repository's Actions runs.
 6. Save the Terraform outputs, successful deployed-verification artifact, a
    CloudFront browser screenshot, and evidence of DynamoDB/S3 activity. Check
    AWS Billing for actual charges. Budget notifications are alerts, not a cap.

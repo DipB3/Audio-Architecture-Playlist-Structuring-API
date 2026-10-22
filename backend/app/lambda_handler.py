@@ -281,7 +281,7 @@ def handler(event: Dict[str, Any], context: Any = None) -> Dict[str, Any]:
                     "AWS Lambda (Serverless Compute)",
                     "Amazon API Gateway (HTTP API v2)",
                     "Amazon DynamoDB (NoSQL Data & History)",
-                    "Amazon S3 (Catalog & Export Bundles)",
+                    "Amazon S3 (Playlist Export Bundles)",
                     "Amazon CloudWatch & AWS Budgets (DevOps & Alerts)"
                 ]
             })
@@ -442,18 +442,14 @@ def handler(event: Dict[str, Any], context: Any = None) -> Dict[str, Any]:
             export_format = export_format.lower()
             if export_format not in {"m3u", "json", "csv"}:
                 raise ValueError("format must be one of: m3u, json, csv.")
-            playlist_dict = payload.get("playlist")
-            if playlist_id:
-                validate_playlist_id(playlist_id)
-
-            if not playlist_dict and playlist_id:
-                playlist_dict = storage_db.get_playlist(playlist_id)
-
+            # Export only server-generated playlists. A client-supplied playlist body
+            # is ignored so callers cannot overwrite another playlist's export object.
+            if not playlist_id:
+                return make_response(400, {"error": "Missing playlist_id for export."})
+            validate_playlist_id(playlist_id)
+            playlist_dict = storage_db.get_playlist(playlist_id)
             if not playlist_dict:
-                return make_response(400, {"error": "Missing playlist data or playlist_id for export."})
-            if not isinstance(playlist_dict, dict):
-                raise ValueError("playlist must be an object.")
-            validate_playlist_id(playlist_dict.get("playlist_id"))
+                return make_response(404, {"error": f"Playlist '{playlist_id}' not found."})
 
             # Reconstruct model for formatting
             from .engine.models import StructuredPlaylist, ArchitectureMetrics, TrackTransition, EnergyTrajectoryPoint

@@ -7,10 +7,22 @@ import os
 import json
 import logging
 import tempfile
+from decimal import Decimal
 from typing import Dict, Any, List, Optional
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
+
+
+def from_dynamo(value):
+    """Convert DynamoDB Decimals back to JSON numbers, keeping whole numbers as int."""
+    if isinstance(value, Decimal):
+        return int(value) if value == value.to_integral_value() else float(value)
+    if isinstance(value, dict):
+        return {key: from_dynamo(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [from_dynamo(item) for item in value]
+    return value
 
 
 def history_summary(data):
@@ -71,7 +83,6 @@ class DynamoDBStorage:
         if self.is_connected and self.table:
             try:
                 # DynamoDB requires float conversion to Decimal or JSON serialization
-                from decimal import Decimal
                 def convert_floats(obj):
                     if isinstance(obj, float):
                         return Decimal(str(obj))
@@ -107,16 +118,7 @@ class DynamoDBStorage:
                 item = response.get("Item")
                 if item:
                     # Convert Decimals back to float/int
-                    def convert_decimals(obj):
-                        from decimal import Decimal
-                        if isinstance(obj, Decimal):
-                            return float(obj)
-                        elif isinstance(obj, dict):
-                            return {k: convert_decimals(v) for k, v in obj.items()}
-                        elif isinstance(obj, list):
-                            return [convert_decimals(v) for v in obj]
-                        return obj
-                    return convert_decimals(item)
+                    return from_dynamo(item)
             except Exception as e:
                 logger.error("Failed to get from DynamoDB: %s", str(e))
 
@@ -144,16 +146,7 @@ class DynamoDBStorage:
                     Limit=limit,
                 )
                 items = response.get("Items", [])
-                def convert_decimals(obj):
-                    from decimal import Decimal
-                    if isinstance(obj, Decimal):
-                        return float(obj)
-                    elif isinstance(obj, dict):
-                        return {k: convert_decimals(v) for k, v in obj.items()}
-                    elif isinstance(obj, list):
-                        return [convert_decimals(v) for v in obj]
-                    return obj
-                return [history_summary(convert_decimals(item)) for item in items]
+                return [history_summary(from_dynamo(item)) for item in items]
             except Exception as e:
                 logger.error("Failed scanning DynamoDB: %s", str(e))
 

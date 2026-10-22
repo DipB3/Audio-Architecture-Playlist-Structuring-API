@@ -1,6 +1,6 @@
 """
 Amazon S3 Storage Adapter.
-Manages persistent catalog asset storage and exports on Amazon S3 with local disk fallback.
+Stores playlist export artifacts on Amazon S3 with local disk fallback.
 """
 import os
 import json

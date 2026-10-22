@@ -80,16 +80,19 @@ role and secrets exist. Require approval on the production environment before
 deployment. Without this variable, pushes run CI and skip the AWS job.
 
 Pushes to main or master test the stack; deployment requires the enable variable.
-The workflow can also be started manually after account setup. The pipeline
+The workflow can also be started manually after account setup. Deployment needs
+two production approvals: the first creates a Terraform plan and shows it in the
+run summary; the second applies exactly that saved plan. The pipeline then
 builds React using the API output, publishes to S3, invalidates CloudFront and
-checks the deployed API, connected storage and exports.
+checks the deployed API, connected storage and exports. The API stage is
+throttled to 5 requests/second (burst 10) by default.
 
 Manual deployment:
 
 ```powershell
 terraform -chdir=terraform init -backend-config="bucket=YOUR_STATE_BUCKET" -backend-config="key=audio-architecture/terraform.tfstate" -backend-config="region=us-east-1" -backend-config="encrypt=true"
-terraform -chdir=terraform plan -var-file=terraform.tfvars.example
-terraform -chdir=terraform apply -var-file=terraform.tfvars.example
+terraform -chdir=terraform plan -var-file=terraform.tfvars.example -out=tfplan
+terraform -chdir=terraform apply tfplan
 ```
 
 Terraform outputs include frontend_url, api_gateway_endpoint,

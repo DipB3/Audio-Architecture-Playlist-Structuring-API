@@ -7,3 +7,6 @@ budget_alert_emails = [
   "pratham.shah@learner.manipal.edu",
   "dipankar.banerjee@learner.manipal.edu"
 ]
+
+api_throttle_rate_limit  = 5
+api_throttle_burst_limit = 10

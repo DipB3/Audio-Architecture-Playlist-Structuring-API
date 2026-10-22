@@ -56,7 +56,9 @@ simpler greedy optimizer; that mode is labeled in the UI.
 3. Configure the GitHub `production` environment with approval protection and
    `AWS_DEPLOY_ROLE_ARN` and `TF_STATE_BUCKET` secrets. Set
    `AWS_DEPLOY_ENABLED=true` only when ready. Never place credentials in Git.
-4. Keep all three CI jobs passing, then run the gated deploy workflow. Record
+4. Keep all three CI jobs passing, then run the gated deploy workflow: approve
+   the plan job, review the plan in its run summary, then approve the apply job.
+   Record
    the Terraform `frontend_url` and `api_gateway_endpoint` outputs; run
    `python scripts/verify_project.py --api-url <endpoint>` and check the site
    at desktop and mobile widths. Capture CloudWatch/API/S3/DynamoDB evidence.

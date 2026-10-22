@@ -19,7 +19,7 @@ output "dynamodb_table_name" {
 }
 
 output "s3_asset_bucket_name" {
-  description = "Name of the Amazon S3 bucket storing track catalog and exported playlists"
+  description = "Name of the Amazon S3 bucket storing exported playlist files"
   value       = aws_s3_bucket.audio_assets.id
 }
 

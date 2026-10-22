@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Music2, Plus, Trash2 } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import { addCustomTrack, removeCustomTrack } from '../services/api';
+import { genreColor } from './genreColors';
 
 const initial = { title: '', artist: '', genre: 'Indie Pop', duration_seconds: 210,
   bpm: 110, energy: .55, camelot_code: '8B', musical_key: 'C Major' };
@@ -35,34 +36,42 @@ export default function CustomTrackManager({ genres, tracks, onChanged }) {
     finally { setBusy(false); }
   };
 
-  return <section id="custom-tracks" aria-labelledby="custom-tracks-title" className="bg-slate-900/70 border border-slate-700 rounded-2xl p-5 space-y-4">
-    <div className="flex items-start gap-3">
-      <span className="p-2 rounded-xl bg-cyan-950 text-cyan-300"><Music2 aria-hidden="true" size={19} /></span>
-      <div>
-        <h2 id="custom-tracks-title" className="font-bold text-white">Bring your own track metadata</h2>
-        <p className="text-sm text-slate-300">Add song metadata to the optimizer. No audio file is uploaded; previews are synthesized motifs.</p>
-      </div>
+  return <section id="custom-tracks" aria-labelledby="custom-tracks-title"
+    className="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] gap-x-12 gap-y-6 border-t-[1.5px] border-ink pt-8">
+    <div>
+      <p className="eyebrow">Your catalog</p>
+      <h2 id="custom-tracks-title" className="mt-2 font-display text-3xl font-semibold tracking-tight">Bring your own tracks</h2>
+      <p className="mt-3 text-sm text-ink-soft max-w-sm">Add a song's metadata and the optimizer can place it. Nothing is uploaded; previews are synthesized from the tempo and key.</p>
+      <p className="mt-4 font-mono text-xs text-muted">{tracks.length} custom {tracks.length === 1 ? 'track' : 'tracks'} · stored locally, or in DynamoDB when deployed</p>
     </div>
-    <form onSubmit={add} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-      <label className="field-label">Title<input required maxLength="80" value={form.title} onChange={e => update('title', e.target.value)} /></label>
-      <label className="field-label">Artist<input required maxLength="80" value={form.artist} onChange={e => update('artist', e.target.value)} /></label>
-      <label className="field-label">Genre<input required maxLength="80" list="catalog-genres" value={form.genre} onChange={e => update('genre', e.target.value)} /><datalist id="catalog-genres">{genres.map(genre => <option key={genre.name} value={genre.name} />)}</datalist></label>
-      <label className="field-label">Duration (seconds)<input required type="number" min="30" max="900" step="1" value={form.duration_seconds} onChange={e => update('duration_seconds', e.target.value)} /></label>
-      <label className="field-label">Tempo (BPM)<input required type="number" min="40" max="220" step="0.1" value={form.bpm} onChange={e => update('bpm', e.target.value)} /></label>
-      <label className="field-label">Energy (0–1)<input required type="number" min="0" max="1" step="0.01" value={form.energy} onChange={e => update('energy', e.target.value)} /></label>
-      <label className="field-label">Camelot key<select value={form.camelot_code} onChange={e => update('camelot_code', e.target.value)}>{['A', 'B'].flatMap(mode => Array.from({ length: 12 }, (_, i) => `${i + 1}${mode}`)).map(code => <option key={code}>{code}</option>)}</select></label>
-      <label className="field-label">Musical key<input required maxLength="40" value={form.musical_key} onChange={e => update('musical_key', e.target.value)} /></label>
-      <div className="sm:col-span-2 lg:col-span-4 flex flex-wrap items-center gap-3">
-        <button type="submit" disabled={busy} className="inline-flex items-center gap-2 rounded-lg bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-bold px-4 py-2 disabled:opacity-50"><Plus size={16} aria-hidden="true" />Add track</button>
-        <span className="text-xs text-slate-400">{tracks.length} custom tracks · stored locally or in DynamoDB when deployed</span>
-      </div>
-    </form>
-    {message && <p role="status" className="text-sm text-emerald-300">{message}</p>}
-    {error && <p role="alert" className="text-sm text-rose-300">{error}</p>}
-    {tracks.length > 0 && <div className="space-y-2 max-h-56 overflow-auto" aria-label="Custom track catalog">{tracks.map(track =>
-      <div key={track.id} className="flex items-center justify-between gap-3 rounded-lg border border-slate-700 px-3 py-2 text-sm">
-        <span><strong className="text-white">{track.title}</strong> · {track.artist} · {track.genre} · {track.bpm} BPM</span>
-        <button type="button" disabled={busy} onClick={() => remove(track)} aria-label={`Remove ${track.title}`} className="p-2 rounded-lg text-rose-300 hover:bg-rose-950 disabled:opacity-50"><Trash2 size={16} aria-hidden="true" /></button>
-      </div>)}</div>}
+
+    <div className="space-y-6">
+      <form onSubmit={add} className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-5">
+        <label className="field col-span-2">Title<input className="field-input" required maxLength="80" value={form.title} onChange={e => update('title', e.target.value)} /></label>
+        <label className="field col-span-2">Artist<input className="field-input" required maxLength="80" value={form.artist} onChange={e => update('artist', e.target.value)} /></label>
+        <label className="field col-span-2">Genre<input className="field-input" required maxLength="80" list="catalog-genres" value={form.genre} onChange={e => update('genre', e.target.value)} /><datalist id="catalog-genres">{genres.map(genre => <option key={genre.name} value={genre.name} />)}</datalist></label>
+        <label className="field col-span-2">Musical key<input className="field-input" required maxLength="40" value={form.musical_key} onChange={e => update('musical_key', e.target.value)} /></label>
+        <label className="field">Length (s)<input className="field-input font-mono" required type="number" min="30" max="900" step="1" value={form.duration_seconds} onChange={e => update('duration_seconds', e.target.value)} /></label>
+        <label className="field">Tempo (BPM)<input className="field-input font-mono" required type="number" min="40" max="220" step="0.1" value={form.bpm} onChange={e => update('bpm', e.target.value)} /></label>
+        <label className="field">Energy (0–1)<input className="field-input font-mono" required type="number" min="0" max="1" step="0.01" value={form.energy} onChange={e => update('energy', e.target.value)} /></label>
+        <label className="field">Camelot key<select className="field-input font-mono" value={form.camelot_code} onChange={e => update('camelot_code', e.target.value)}>{['A', 'B'].flatMap(mode => Array.from({ length: 12 }, (_, i) => `${i + 1}${mode}`)).map(code => <option key={code}>{code}</option>)}</select></label>
+        <div className="col-span-2 sm:col-span-4">
+          <button type="submit" disabled={busy} className="btn btn-ink"><Plus size={16} aria-hidden="true" />Add track</button>
+        </div>
+      </form>
+      {message && <p role="status" className="text-sm text-olive">{message}</p>}
+      {error && <p role="alert" className="text-sm text-accent-ink">{error}</p>}
+      {tracks.length > 0 && <ul className="max-h-60 overflow-auto border-t border-rule" aria-label="Custom track catalog">{tracks.map(track =>
+        <li key={track.id} className="flex items-center justify-between gap-3 py-2.5 border-b border-rule text-sm">
+          <span className="flex items-center gap-3 min-w-0">
+            <span aria-hidden="true" className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: genreColor(track.genre) }} />
+            <span className="truncate"><strong className="font-semibold">{track.title}</strong> <span className="text-muted">— {track.artist}</span></span>
+          </span>
+          <span className="flex items-center gap-4 shrink-0">
+            <span className="hidden sm:inline font-mono text-xs text-muted">{track.genre} · {track.bpm} BPM</span>
+            <button type="button" disabled={busy} onClick={() => remove(track)} aria-label={`Remove ${track.title}`} className="icon-btn disabled:opacity-50"><X size={16} aria-hidden="true" /></button>
+          </span>
+        </li>)}</ul>}
+    </div>
   </section>;
 }

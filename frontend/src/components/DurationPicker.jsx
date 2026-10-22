@@ -1,47 +1,25 @@
 import React from 'react';
-import { Clock } from 'lucide-react';
 
 const DURATION_PRESETS = [20, 30, 45, 60, 90, 120];
 
 export default function DurationPicker({ duration, onDurationChange }) {
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <label className="text-sm font-semibold text-slate-200 flex items-center space-x-2">
-          <span>3. Session Duration</span>
-          <span className="text-xs font-normal text-slate-400">(Listening Target)</span>
-        </label>
-        <div className="flex items-center space-x-1 font-mono text-cyan-400 text-sm font-bold bg-slate-900 border border-slate-800 px-2.5 py-0.5 rounded-lg">
-          <Clock className="w-3.5 h-3.5" />
-          <span>{duration} Minutes</span>
-        </div>
-      </div>
-
-      <div className="flex flex-wrap gap-2">
-        {DURATION_PRESETS.map((mins) => (
-          <button
-            key={mins}
-            onClick={() => onDurationChange(mins)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-              duration === mins
-                ? 'bg-cyan-500 text-slate-950 font-bold shadow-md shadow-cyan-500/20'
-                : 'bg-slate-900 border border-slate-800 text-slate-300 hover:border-slate-700 hover:bg-slate-800'
-            }`}
-          >
-            {mins}m
-          </button>
-        ))}
-
-        <div className="flex-1 min-w-[140px] flex items-center px-2">
-          <input aria-label="Session duration in minutes"
-            type="range"
-            min="15"
-            max="180"
-            step="5"
-            value={duration}
-            onChange={(e) => onDurationChange(parseInt(e.target.value, 10))}
-            className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
-          />
+    <div className="flex flex-col md:flex-row md:items-end gap-5 md:gap-10">
+      <p className="shrink-0 leading-none" aria-live="polite">
+        <span className="font-display text-6xl font-semibold tracking-tight">{duration}</span>
+        <span className="ml-2 text-sm text-muted">minutes</span>
+      </p>
+      <div className="flex-1 space-y-4">
+        <input aria-label="Session duration in minutes" type="range" min="15" max="180" step="5"
+          value={duration} onChange={(e) => onDurationChange(parseInt(e.target.value, 10))}
+          className="w-full cursor-pointer" />
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Duration presets">
+          {DURATION_PRESETS.map((mins) => (
+            <button key={mins} type="button" aria-pressed={duration === mins}
+              onClick={() => onDurationChange(mins)} className="chip !py-1 !px-3 font-mono !text-xs">
+              {mins}m
+            </button>
+          ))}
         </div>
       </div>
     </div>

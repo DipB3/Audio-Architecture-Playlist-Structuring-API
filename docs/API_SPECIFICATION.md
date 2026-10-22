@@ -50,7 +50,7 @@ All JSON error responses use the form `{"error": "...", "message": "..."}`. Play
     "AWS Lambda (Serverless Compute)",
     "Amazon API Gateway (HTTP API v2)",
     "Amazon DynamoDB (NoSQL Data & History)",
-    "Amazon S3 (Catalog & Export Bundles)",
+    "Amazon S3 (Playlist Export Bundles)",
     "Amazon CloudWatch & AWS Budgets (DevOps & Alerts)"
   ]
 }
@@ -181,13 +181,30 @@ private audio or personal data.
   "format": "m3u"
 }
 ```
+- **Behavior:** The API exports only the stored playlist with this ID. Any
+  `playlist` object in the request body is ignored, so callers cannot replace
+  another playlist's export file. `format` is `m3u`, `json` or `csv`.
+- **Errors:** `400` for a missing or malformed `playlist_id` or unknown format,
+  `404` when no stored playlist has that ID.
+- **Response `200 OK`:**
+```json
+{
+  "format": "m3u",
+  "filename": "Deep_Work_Sprint_Architecture.m3u",
+  "content": "#EXTM3U\n#PLAYLIST:Deep Work Sprint Architecture\n#EXTINF:234,Elena Rostova - Metamorphosis in F\n#EXT-X-BPM:68.0\n#EXT-X-KEY:7B (F Major)\n#EXT-X-ENERGY:0.22\ntracks/trk_cl_001.mp3\n...",
+  "content_type": "audio/x-mpegurl",
+  "s3_url": "https://<export-bucket>.s3.amazonaws.com/exports/pl_7f8a9b0c1d2e.m3u?X-Amz-Expires=3600&..."
+}
+```
+In local mode `s3_url` is a `local://storage/...` reference. On AWS it is a
+private presigned link that expires after one hour.
 
 ---
 
 ### 5. List Catalog Tracks
 - **Method:** `GET`
-- **Path:** `/tracks?genre=<genre>&limit=<1-50>`
-- **Response:** Track metadata filtered by genre when supplied.
+- **Path:** `/tracks?genre=<genre>&limit=<1-500>&offset=<n>`
+- **Response:** `{total, tracks, offset, limit}` for the seeded and custom catalog, filtered by genre when supplied.
 
 ### 6. Retrieve Playlist
 - **Method:** `GET`
@@ -203,12 +220,6 @@ private audio or personal data.
 - **Method:** `GET`
 - **Path:** `/presets`
 - **Response:** Available mathematical curves and sampled preview coordinates.
-- **Response `200 OK`:**
-```json
-{
-  "format": "m3u",
-  "filename": "Deep_Work_Sprint_Architecture.m3u",
-  "content": "#EXTM3U\n#PLAYLIST:Deep Work Sprint Architecture\n#EXTINF:234,Elena Rostova - Metamorphosis in F\n#EXT-X-BPM:68.0\n#EXT-X-KEY:7B (F Major)\n#EXT-X-ENERGY:0.22\ntracks/trk_cl_001.mp3\n...",
-  "s3_url": "https://audio-architecture-assets.s3.us-east-1.amazonaws.com/exports/pl_7f8a9b0c1d2e.m3u"
-}
-```
+
+The deployed stage throttles all routes (default 5 requests/second, burst 10;
+see `terraform/variables.tf`). Excess requests receive `429 Too Many Requests`.

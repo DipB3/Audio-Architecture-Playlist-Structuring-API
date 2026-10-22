@@ -14,8 +14,9 @@ claiming a live release.
 3. Configure GitHub OIDC, an IAM deployment role and the production environment.
 4. Set AWS_DEPLOY_ROLE_ARN and TF_STATE_BUCKET secrets.
 5. Review budget email recipients and require production deployment approval.
-6. Set repository variable `AWS_DEPLOY_ENABLED=true`, run the workflow manually, and
-   retain successful integration artifacts.
+6. Set repository variable `AWS_DEPLOY_ENABLED=true`, run the workflow manually,
+   review the Terraform plan before approving the apply job, and retain
+   successful integration artifacts.
 7. Open CloudFront and demonstrate generation, reload and download.
 8. Capture API Gateway, Lambda logs, DynamoDB items, S3 exports and budget
    subscription evidence. Record actual cost.

@@ -82,6 +82,32 @@ class TestLambdaHandler(unittest.TestCase):
         exp_body = json.loads(exp_res["body"])
         self.assertIn("#EXTM3U", exp_body["content"])
 
+        # A client-supplied playlist body must not replace the stored playlist.
+        forged = dict(playlist, name="Forged", tracks=playlist["tracks"][:1])
+        forged_res = handler({
+            "httpMethod": "POST",
+            "path": "/playlists/export",
+            "body": json.dumps({"playlist_id": pl_id, "playlist": forged, "format": "m3u"}),
+        }, None)
+        self.assertEqual(forged_res["statusCode"], 200)
+        forged_body = json.loads(forged_res["body"])
+        self.assertIn("#PLAYLIST:Integration Test Playlist", forged_body["content"])
+        self.assertEqual(forged_body["content"].count("#EXTINF"), playlist["track_count"])
+
+    def test_export_requires_stored_playlist(self):
+        cases = [
+            ({"playlist": {"playlist_id": "pl_unsaved"}, "format": "m3u"}, 400),
+            ({"playlist_id": "pl_doesnotexist000", "format": "csv"}, 404),
+        ]
+        for payload, status in cases:
+            with self.subTest(payload=payload):
+                response = handler({
+                    "httpMethod": "POST",
+                    "path": "/playlists/export",
+                    "body": json.dumps(payload),
+                }, None)
+                self.assertEqual(response["statusCode"], status)
+
     def test_rejects_invalid_generation_parameters(self):
         cases = [
             {"energy_weight": float("nan")},

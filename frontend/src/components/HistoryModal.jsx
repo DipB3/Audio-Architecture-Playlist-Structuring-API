@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { X, History, ArrowRight } from 'lucide-react';
+import { X, ArrowRight } from 'lucide-react';
 import { fetchHistory } from '../services/api';
 import useDialogFocus from './useDialogFocus';
 
@@ -20,76 +20,42 @@ export default function HistoryModal({ isOpen, onClose, onSelectHistoryPlaylist 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="history-title" className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
-        
-        {/* Header */}
-        <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+    <div className="dialog-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}>
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="history-title" className="dialog-sheet max-w-2xl">
+        <div className="dialog-head">
           <div>
-            <h3 id="history-title" className="text-base font-bold text-white flex items-center space-x-2">
-              <History className="w-5 h-5 text-cyan-400" />
-              <span>Saved Generation History</span>
-            </h3>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Reload the exact tracklist from your earlier sessions.
-            </p>
+            <p className="eyebrow">History</p>
+            <h2 id="history-title" className="mt-1 font-display text-2xl font-semibold tracking-tight">Saved sessions</h2>
+            <p className="text-sm text-muted mt-1">Reload the exact tracklist from an earlier session.</p>
           </div>
-          <button
-            onClick={onClose}
-            aria-label="Close history dialog"
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <button type="button" onClick={onClose} aria-label="Close history dialog" className="icon-btn"><X className="w-5 h-5" /></button>
         </div>
 
-        {/* Content */}
-        <div className="p-4 flex-1 overflow-auto space-y-3">
+        <div className="flex-1 overflow-auto px-6">
           {loading ? (
-            <div className="py-12 text-center text-xs text-slate-400">
-              Loading saved sessions...
-            </div>
+            <p className="py-12 text-center text-sm text-muted" role="status">Loading saved sessions…</p>
           ) : history.length === 0 ? (
-            <div className="py-12 text-center text-xs text-slate-400">
-              No saved sessions yet. Generate a playlist to save your first session.
-            </div>
+            <p className="py-12 text-center text-sm text-muted">No saved sessions yet. Generate a playlist to save your first one.</p>
           ) : (
-            history.map((item) => (
-              <div
-                key={item.playlist_id}
-                className="bg-slate-950 p-4 rounded-xl border border-slate-800 hover:border-slate-700 transition-all flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
-              >
-                <div>
-                  <div className="flex items-center space-x-2">
-                    <h4 className="text-xs font-bold text-white">{item.name}</h4>
-                    <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-cyan-950 border border-cyan-800 text-cyan-400">
-                      {item.curve_type.replace(/_/g, ' ')}
+            <ul>
+              {history.map((item) => (
+                <li key={item.playlist_id} className="border-b border-rule last:border-b-0">
+                  <button type="button"
+                    onClick={() => { onSelectHistoryPlaylist(item.playlist_id); onClose(); }}
+                    className="group w-full text-left flex items-center gap-4 py-4 hover:text-accent-ink">
+                    <span className="flex-1 min-w-0">
+                      <span className="block font-display text-lg font-medium truncate">{item.name}</span>
+                      <span className="block font-mono text-xs text-muted mt-0.5">
+                        {item.curve_type.replace(/_/g, ' ')} / {item.track_count} tracks / {item.actual_duration_formatted} / fit {Math.round(item.overall_fit_score * 100)}%
+                      </span>
                     </span>
-                  </div>
-                  <div className="flex items-center space-x-3 text-[11px] text-slate-400 mt-1 font-mono">
-                    <span>{item.track_count} tracks</span>
-                    <span>&bull;</span>
-                    <span>{item.actual_duration_formatted}</span>
-                    <span>&bull;</span>
-                    <span className="text-emerald-400">Fit: {Math.round(item.overall_fit_score * 100)}%</span>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => {
-                    onSelectHistoryPlaylist(item.playlist_id);
-                    onClose();
-                  }}
-                  className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-cyan-500 hover:text-slate-950 text-slate-200 text-xs font-semibold transition-all shrink-0"
-                >
-                  <span>Load</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            ))
+                    <span className="text-sm font-semibold shrink-0 flex items-center gap-1">Load <ArrowRight aria-hidden="true" className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" /></span>
+                  </button>
+                </li>
+              ))}
+            </ul>
           )}
         </div>
-
       </div>
     </div>
   );

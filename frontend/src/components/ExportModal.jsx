@@ -1,7 +1,13 @@
 import React, { useState } from 'react';
-import { X, Download, Copy, Check, FileCode, FileSpreadsheet, Music } from 'lucide-react';
+import { X, Download, Copy, Check } from 'lucide-react';
 import { exportPlaylist } from '../services/api';
 import useDialogFocus from './useDialogFocus';
+
+const FORMATS = [
+  ['m3u', 'Extended M3U', 'Media players and DJ software'],
+  ['json', 'JSON', 'Full structure, metrics and diagnostics'],
+  ['csv', 'CSV', 'Spreadsheets and library tools'],
+];
 
 export default function ExportModal({ playlist, onClose }) {
   const dialogRef = useDialogFocus(true, onClose);
@@ -9,11 +15,13 @@ export default function ExportModal({ playlist, onClose }) {
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [exportData, setExportData] = useState(null);
+  const [error, setError] = useState('');
 
   const handleFetchExport = async (fmt) => {
     setFormat(fmt);
     setLoading(true);
     setCopied(false);
+    setError('');
     try {
       const res = await exportPlaylist({
         playlist,
@@ -23,6 +31,8 @@ export default function ExportModal({ playlist, onClose }) {
       setExportData(res);
     } catch (err) {
       console.error("Export error:", err);
+      setExportData(null);
+      setError(err.message || 'The export could not be created.');
     } finally {
       setLoading(false);
     }
@@ -36,8 +46,10 @@ export default function ExportModal({ playlist, onClose }) {
       format: 'm3u'
     }).then((res) => {
       if (active) setExportData(res);
-    }).catch((err) => console.error("Export error:", err))
-      .finally(() => active && setLoading(false));
+    }).catch((err) => {
+      console.error("Export error:", err);
+      if (active) setError(err.message || 'The export could not be created.');
+    }).finally(() => active && setLoading(false));
     return () => { active = false; };
   }, [playlist]);
 
@@ -62,108 +74,54 @@ export default function ExportModal({ playlist, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="export-title" className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
-        
-        {/* Header */}
-        <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+    <div className="dialog-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}>
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="export-title" className="dialog-sheet max-w-2xl">
+        <div className="dialog-head">
           <div>
-            <h3 id="export-title" className="text-base font-bold text-white flex items-center space-x-2">
-              <Download className="w-5 h-5 text-cyan-400" />
-              <span>Export Audio Architecture Structure</span>
-            </h3>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Package finalized tracklist into standardized media containers.
-            </p>
+            <p className="eyebrow">Export</p>
+            <h2 id="export-title" className="mt-1 font-display text-2xl font-semibold tracking-tight">{playlist.name}</h2>
           </div>
-          <button
-            onClick={onClose}
-            aria-label="Close export dialog"
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <button type="button" onClick={onClose} aria-label="Close export dialog" className="icon-btn"><X className="w-5 h-5" /></button>
         </div>
 
-        {/* Format Selector Pills */}
-        <div className="p-4 border-b border-slate-800 bg-slate-950/60 flex items-center space-x-2">
-          <button
-            onClick={() => handleFetchExport('m3u')}
-            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-              format === 'm3u'
-                ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20'
-                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-            }`}
-          >
-            <Music className="w-3.5 h-3.5" />
-            <span>Extended M3U (VLC / DJ)</span>
-          </button>
-
-          <button
-            onClick={() => handleFetchExport('json')}
-            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-              format === 'json'
-                ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20'
-                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-            }`}
-          >
-            <FileCode className="w-3.5 h-3.5" />
-            <span>JSON Architecture Spec</span>
-          </button>
-
-          <button
-            onClick={() => handleFetchExport('csv')}
-            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-              format === 'csv'
-                ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20'
-                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-            }`}
-          >
-            <FileSpreadsheet className="w-3.5 h-3.5" />
-            <span>CSV Table (Rekordbox / Excel)</span>
-          </button>
+        <div role="group" aria-label="Export format" className="grid grid-cols-3 border-b border-rule">
+          {FORMATS.map(([id, label, hint]) => (
+            <button key={id} type="button" aria-pressed={format === id} onClick={() => handleFetchExport(id)}
+              className={`text-left px-6 py-3 border-r last:border-r-0 border-rule transition-colors ${
+                format === id ? 'bg-ink text-paper' : 'hover:bg-paper-deep'
+              }`}>
+              <span className="block font-semibold text-sm">{label}</span>
+              <span className={`hidden sm:block text-xs mt-0.5 ${format === id ? 'opacity-70' : 'text-muted'}`}>{hint}</span>
+            </button>
+          ))}
         </div>
 
-        {/* Preview Code View */}
-        <div className="p-4 flex-1 overflow-auto bg-slate-950">
+        <div className="flex-1 overflow-auto bg-paper-deep px-6 py-4 min-h-48">
           {loading ? (
-            <div className="h-48 flex items-center justify-center text-xs text-slate-400">
-              Packaging export artifact...
-            </div>
+            <p className="py-16 text-center text-sm text-muted" role="status">Preparing the file…</p>
+          ) : error ? (
+            <p className="py-16 text-center text-sm text-accent-ink" role="alert">{error}</p>
           ) : (
-            <pre className="text-[11px] font-mono text-cyan-300 whitespace-pre leading-relaxed select-all">
+            <pre className="text-[11px] font-mono whitespace-pre leading-relaxed">
               {exportData ? exportData.content : "No export content available."}
             </pre>
           )}
         </div>
 
-        {/* Footer Actions */}
-        <div className="p-4 border-t border-slate-800 bg-slate-900 flex items-center justify-between">
-          <div className="text-[11px] text-slate-400 font-mono truncate max-w-[280px]">
-            {exportData && exportData.s3_url && (
-              <span>S3 Endpoint: {exportData.s3_url}</span>
-            )}
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={handleCopy}
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-all"
-            >
-              {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-              <span>{copied ? 'Copied!' : 'Copy Code'}</span>
+        <div className="px-6 py-4 border-t-[1.5px] border-ink flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <p className="text-xs text-muted font-mono truncate sm:max-w-[260px]" title={exportData?.s3_url || ''}>
+            {exportData?.s3_url ? `Stored: ${exportData.s3_url}` : ''}
+          </p>
+          <div className="flex gap-2">
+            <button type="button" onClick={handleCopy} disabled={!exportData} className="btn btn-line btn-small">
+              {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+              {copied ? 'Copied' : 'Copy'}
             </button>
-
-            <button
-              onClick={handleDownload}
-              className="flex items-center space-x-1.5 px-4 py-1.5 rounded-lg bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white text-xs font-bold shadow-lg shadow-cyan-500/20 transition-all"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>Download File</span>
+            <button type="button" onClick={handleDownload} disabled={!exportData} className="btn btn-ink btn-small">
+              <Download className="w-3.5 h-3.5" />Download
             </button>
           </div>
         </div>
-
       </div>
     </div>
   );

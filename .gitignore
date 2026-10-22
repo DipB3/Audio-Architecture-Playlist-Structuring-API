@@ -75,3 +75,6 @@ terraform/lambda_payload.zip
 .idea/
 .DS_Store
 Thumbs.db
+
+# Saved Terraform plans can reveal infrastructure details
+terraform/tfplan*

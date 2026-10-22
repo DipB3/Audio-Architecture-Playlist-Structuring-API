@@ -1,15 +1,10 @@
 import React, { useState } from 'react';
-import { Activity } from 'lucide-react';
+import { GENRE_COLORS, genreColor } from './genreColors';
 
-const GENRE_DOT_COLORS = {
-  "Contemporary Classical Piano": "#f59e0b",
-  "Indie Pop": "#ec4899",
-  "Hip-Hop": "#8b5cf6",
-  "Ambient": "#14b8a6",
-  "Deep House": "#3b82f6",
-  "Synthwave": "#d946ef",
-  "Neo-Soul": "#10b981"
-};
+const INK = '#1b1a17';
+const RULE = '#d3c9b6';
+const MUTED = '#6a6458';
+const ACCENT = '#c23d17';
 
 export default function EnergyCurveVisualizer({ playlist, activeTrackId, onTrackSelect }) {
   const [hoveredPoint, setHoveredPoint] = useState(null);
@@ -21,19 +16,18 @@ export default function EnergyCurveVisualizer({ playlist, activeTrackId, onTrack
   const trajectory = playlist.energy_trajectory;
   const metrics = playlist.metrics || {};
 
-  // Build SVG path for Target Curve
   const svgWidth = 800;
-  const svgHeight = 220;
-  const paddingX = 40;
-  const paddingY = 25;
-  const plotWidth = svgWidth - paddingX * 2;
-  const plotHeight = svgHeight - paddingY * 2;
+  const svgHeight = 240;
+  const paddingLeft = 44;
+  const paddingRight = 12;
+  const paddingY = 18;
+  const plotWidth = svgWidth - paddingLeft - paddingRight;
+  const plotHeight = svgHeight - paddingY * 2 - 14;
 
-  // Coordinate mapping functions
-  const mapX = (tFraction) => paddingX + tFraction * plotWidth;
+  const mapX = (tFraction) => paddingLeft + tFraction * plotWidth;
   const mapY = (energy) => paddingY + (1.0 - energy) * plotHeight;
 
-  // Build continuous target path
+  // Smooth target path from trajectory points, replaced by the dense samples when present.
   let targetPath = "";
   trajectory.forEach((pt, idx) => {
     const x = mapX(pt.normalized_time);
@@ -43,224 +37,121 @@ export default function EnergyCurveVisualizer({ playlist, activeTrackId, onTrack
     } else {
       const prevX = mapX(trajectory[idx - 1].normalized_time);
       const prevY = mapY(trajectory[idx - 1].target_energy);
-      const cX1 = prevX + (x - prevX) / 2;
-      const cX2 = prevX + (x - prevX) / 2;
-      targetPath += ` C ${cX1} ${prevY}, ${cX2} ${y}, ${x} ${y}`;
+      const cX = prevX + (x - prevX) / 2;
+      targetPath += ` C ${cX} ${prevY}, ${cX} ${y}, ${x} ${y}`;
     }
   });
-
   if (playlist.diagnostics?.target_samples?.length) {
     targetPath = playlist.diagnostics.target_samples.map((point, index) =>
       `${index ? 'L' : 'M'} ${mapX(point.time_fraction)} ${mapY(point.energy)}`).join(' ');
   }
+  const areaPath = `${targetPath} L ${mapX(1)} ${mapY(0)} L ${mapX(0)} ${mapY(0)} Z`;
 
-  // Build actual playlist stepped path
-  let actualPath = "";
-  trajectory.forEach((pt, idx) => {
-    const x = mapX(pt.normalized_time);
-    const y = mapY(pt.actual_energy);
-    if (idx === 0) {
-      actualPath += `M ${x} ${y}`;
-    } else {
-      actualPath += ` L ${x} ${y}`;
-    }
-  });
+  const actualPath = trajectory.map((pt, idx) =>
+    `${idx ? 'L' : 'M'} ${mapX(pt.normalized_time)} ${mapY(pt.actual_energy)}`).join(' ');
+
+  const stats = [
+    ['Overall fit', Math.round(metrics.overall_fit_score * 100)],
+    ['Harmonic match', Math.round(metrics.harmonic_compatibility_rate)],
+    ['Tempo smoothness', Math.round(metrics.tempo_smoothness_score * 100)],
+    ['Duration accuracy', Math.round(metrics.duration_accuracy_percent)],
+  ];
+  const usedGenres = Object.keys(GENRE_COLORS).filter(name => playlist.genres_used.includes(name))
+    .concat(playlist.genres_used.filter(name => !GENRE_COLORS[name]));
 
   return (
-    <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
-      {/* Title & Metrics Bar */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 pb-3 border-b border-slate-800">
-        <div>
-          <div className="flex items-center space-x-2">
-            <Activity className="w-5 h-5 text-cyan-400" />
-            <h3 className="text-base font-bold text-white tracking-tight">
-              Acoustic Energy Trajectory: Target Curve vs Structured Tracklist
-            </h3>
+    <div className="space-y-8">
+      <dl className="grid grid-cols-2 md:grid-cols-4 border-y-[1.5px] border-ink divide-rule md:divide-x">
+        {stats.map(([label, value], index) => (
+          <div key={label} className={`py-4 md:px-6 md:first:pl-0 ${index < 2 ? 'border-b md:border-b-0 border-rule' : ''}`}>
+            <dt className="eyebrow">{label}</dt>
+            <dd className="mt-1 font-display text-4xl font-semibold tracking-tight">
+              {value}<span className="text-xl text-muted font-normal">%</span>
+            </dd>
           </div>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Real-time verification of continuous energy flow, tempo alignment, and harmonic transitions.
-          </p>
-        </div>
+        ))}
+      </dl>
 
-        {/* Metric Badges */}
-        <div className="flex flex-wrap items-center gap-2 font-mono">
-          <div className="px-3 py-1.5 rounded-lg bg-cyan-950/60 border border-cyan-800/80 text-cyan-300 text-xs">
-            <span className="text-[10px] uppercase text-cyan-500 font-sans block">Overall Fit</span>
-            <span className="font-bold text-sm">{Math.round(metrics.overall_fit_score * 100)}%</span>
-          </div>
+      <figure>
+        <figcaption className="flex flex-wrap items-baseline justify-between gap-3 mb-3">
+          <span className="font-display text-2xl font-semibold tracking-tight">Energy over time</span>
+          <span className="text-xs text-muted">Hover or focus a point to inspect it; click to preview.</span>
+        </figcaption>
 
-          <div className="px-3 py-1.5 rounded-lg bg-emerald-950/60 border border-emerald-800/80 text-emerald-300 text-xs">
-            <span className="text-[10px] uppercase text-emerald-500 font-sans block">Harmonic Match</span>
-            <span className="font-bold text-sm">{Math.round(metrics.harmonic_compatibility_rate)}%</span>
-          </div>
-
-          <div className="px-3 py-1.5 rounded-lg bg-indigo-950/60 border border-indigo-800/80 text-indigo-300 text-xs">
-            <span className="text-[10px] uppercase text-indigo-500 font-sans block">Tempo Smoothness</span>
-            <span className="font-bold text-sm">{Math.round(metrics.tempo_smoothness_score * 100)}%</span>
-          </div>
-
-          <div className="px-3 py-1.5 rounded-lg bg-purple-950/60 border border-purple-800/80 text-purple-300 text-xs">
-            <span className="text-[10px] uppercase text-purple-500 font-sans block">Duration Precision</span>
-            <span className="font-bold text-sm">{Math.round(metrics.duration_accuracy_percent)}%</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Interactive SVG Chart */}
-      <div className="relative bg-slate-950 rounded-xl p-2 border border-slate-800/80 overflow-hidden">
-        {/* Hover card */}
-        {hoveredPoint && (
-          <div className="absolute top-4 right-4 z-20 bg-slate-900/95 border border-cyan-500/60 rounded-xl p-3 shadow-2xl backdrop-blur-md text-xs space-y-1.5 w-64 pointer-events-none transition-all">
-            <div className="flex items-center justify-between">
-              <span className="font-mono text-[10px] text-cyan-400 font-bold">Track #{hoveredPoint.index}</span>
-              <span className="text-[10px] text-slate-400 font-mono">{hoveredPoint.time_formatted}</span>
+        {/* Keeps the chart legible on phones by scrolling it sideways instead of shrinking it. */}
+        <div className="relative overflow-x-auto">
+          {hoveredPoint && (
+            <div className="absolute top-2 right-2 z-20 w-60 bg-paper border-[1.5px] border-ink p-3 text-xs space-y-1 pointer-events-none"
+              style={{ boxShadow: `4px 4px 0 ${INK}` }}>
+              <p className="flex justify-between font-mono text-muted">
+                <span>Track {hoveredPoint.index}</span><span>{hoveredPoint.time_formatted}</span>
+              </p>
+              <p className="font-semibold text-sm truncate">{hoveredPoint.track_title}</p>
+              <p className="text-ink-soft truncate">{hoveredPoint.artist}</p>
+              <p className="pt-1.5 mt-1 border-t border-rule grid grid-cols-2 gap-1 font-mono">
+                <span>{hoveredPoint.bpm} BPM</span><span>Key {hoveredPoint.camelot_code}</span>
+                <span>Actual {hoveredPoint.actual_energy}</span><span>Target {hoveredPoint.target_energy}</span>
+              </p>
+              <p className="font-mono">
+                Δ <span className={Math.abs(hoveredPoint.energy_delta) <= 0.1 ? 'text-olive font-semibold' : 'text-accent-ink font-semibold'}>
+                  {hoveredPoint.energy_delta > 0 ? `+${hoveredPoint.energy_delta}` : hoveredPoint.energy_delta}
+                </span>
+              </p>
             </div>
-            <p className="font-bold text-white text-xs truncate">{hoveredPoint.track_title}</p>
-            <p className="text-[11px] text-slate-300 truncate">{hoveredPoint.artist}</p>
-            <div className="pt-1.5 border-t border-slate-800 grid grid-cols-2 gap-1 text-[11px] font-mono text-slate-400">
-              <div>BPM: <span className="text-slate-200 font-bold">{hoveredPoint.bpm}</span></div>
-              <div>Key: <span className="text-slate-200 font-bold">{hoveredPoint.camelot_code}</span></div>
-              <div>Actual E: <span className="text-emerald-400 font-bold">{hoveredPoint.actual_energy}</span></div>
-              <div>Target E: <span className="text-cyan-400 font-bold">{hoveredPoint.target_energy}</span></div>
-            </div>
-            <div className="text-[10px] font-mono text-slate-400">
-              Energy Error Delta: <span className={Math.abs(hoveredPoint.energy_delta) <= 0.1 ? 'text-emerald-400 font-bold' : 'text-amber-400 font-bold'}>
-                {hoveredPoint.energy_delta > 0 ? `+${hoveredPoint.energy_delta}` : hoveredPoint.energy_delta}
-              </span>
-            </div>
-          </div>
-        )}
+          )}
 
-        <svg role="img" aria-label={`Energy chart showing ${trajectory.length} track points, target versus actual energy. Detailed values are available in the track table below.`} viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="w-full h-auto overflow-visible select-none">
-          <defs>
-            <linearGradient id="targetGlow" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor="#06b6d4" />
-              <stop offset="50%" stopColor="#8b5cf6" />
-              <stop offset="100%" stopColor="#ec4899" />
-            </linearGradient>
-
-            <linearGradient id="areaFill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.15" />
-              <stop offset="100%" stopColor="#06b6d4" stopOpacity="0.0" />
-            </linearGradient>
-          </defs>
-
-          {/* Grid lines */}
-          {[0.25, 0.50, 0.75].map((level) => (
-            <line
-              key={level}
-              x1={paddingX}
-              y1={mapY(level)}
-              x2={svgWidth - paddingX}
-              y2={mapY(level)}
-              stroke="#1e293b"
-              strokeDasharray="4 4"
-              strokeWidth="1"
-            />
-          ))}
-
-          {/* Energy Y-axis Labels */}
-          <text x={paddingX - 8} y={mapY(0.85)} fill="#64748b" fontSize="9" textAnchor="end" fontFamily="monospace">HIGH (0.85)</text>
-          <text x={paddingX - 8} y={mapY(0.50)} fill="#64748b" fontSize="9" textAnchor="end" fontFamily="monospace">MID (0.50)</text>
-          <text x={paddingX - 8} y={mapY(0.20)} fill="#64748b" fontSize="9" textAnchor="end" fontFamily="monospace">LOW (0.20)</text>
-
-          {/* Target Energy Curve Path (Smooth Gradient) */}
-          <path
-            d={targetPath}
-            fill="none"
-            stroke="url(#targetGlow)"
-            strokeWidth="3.5"
-            strokeLinecap="round"
-          />
-
-          {/* Actual Playlist Step Line */}
-          <path
-            d={actualPath}
-            fill="none"
-            stroke="#475569"
-            strokeWidth="1.5"
-            strokeDasharray="2 3"
-          />
-
-          {/* Actual Track Points */}
-          {trajectory.map((pt, idx) => {
-            const cx = mapX(pt.normalized_time);
-            const cy = mapY(pt.actual_energy);
-            const targetY = mapY(pt.target_energy);
-            const dotColor = GENRE_DOT_COLORS[pt.genre] || "#38bdf8";
-            const isActive = activeTrackId === pt.track_id;
-
-            return (
-              <g key={idx} className="cursor-pointer" onClick={() => onTrackSelect && onTrackSelect(pt.track_id)}>
-                {/* Error connector line */}
-                <line
-                  x1={cx}
-                  y1={targetY}
-                  x2={cx}
-                  y2={cy}
-                  stroke="#334155"
-                  strokeWidth="1"
-                />
-
-                {/* Outer halo when active or hovered */}
-                {isActive && (
-                  <circle
-                    cx={cx}
-                    cy={cy}
-                    r="12"
-                    fill="none"
-                    stroke="#06b6d4"
-                    strokeWidth="2"
-                    className="animate-ping"
-                  />
-                )}
-
-                {/* Point circle */}
-                <circle
-                  cx={cx}
-                  cy={cy}
-                  r={isActive ? "7" : "5"}
-                  fill={dotColor}
-                  stroke="#0f172a"
-                  strokeWidth="2"
-                  className="transition-transform hover:scale-150"
-                  onMouseEnter={() => setHoveredPoint(pt)}
-                  onMouseLeave={() => setHoveredPoint(null)}
-                />
+          <svg role="img" aria-label={`Energy chart showing ${trajectory.length} track points, target versus actual energy. Detailed values are in the track table below.`}
+            viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="w-full min-w-[600px] h-auto overflow-visible select-none">
+            {[0, 0.25, 0.5, 0.75, 1].map((level) => (
+              <g key={level}>
+                <line x1={paddingLeft} y1={mapY(level)} x2={svgWidth - paddingRight} y2={mapY(level)}
+                  stroke={level === 0 ? INK : RULE} strokeWidth={level === 0 ? 1.5 : 1} />
+                <text x={paddingLeft - 10} y={mapY(level) + 3} fill={MUTED} fontSize="10" textAnchor="end" fontFamily="JetBrains Mono, monospace">
+                  {Math.round(level * 100)}
+                </text>
               </g>
-            );
-          })}
+            ))}
 
-          {/* Time X-axis labels */}
-          <text x={paddingX} y={svgHeight - 6} fill="#64748b" fontSize="9" textAnchor="start" fontFamily="monospace">00:00 (Start)</text>
-          <text x={svgWidth / 2} y={svgHeight - 6} fill="#64748b" fontSize="9" textAnchor="middle" fontFamily="monospace">50% Session Mark</text>
-          <text x={svgWidth - paddingX} y={svgHeight - 6} fill="#64748b" fontSize="9" textAnchor="end" fontFamily="monospace">{playlist.actual_duration_formatted} (End)</text>
-        </svg>
-      </div>
+            <path d={areaPath} fill={ACCENT} fillOpacity="0.06" />
+            <path d={targetPath} fill="none" stroke={ACCENT} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+            <path d={actualPath} fill="none" stroke={INK} strokeWidth="1.25" strokeDasharray="3 4" />
 
-      {/* Legend */}
-      <div className="flex flex-wrap items-center justify-between text-[11px] text-slate-400 pt-1">
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-1.5">
-            <span className="w-3.5 h-1 rounded bg-gradient-to-r from-cyan-400 to-pink-500 inline-block"></span>
-            <span className="text-slate-300 font-medium">Target Energy Curve E(t)</span>
-          </div>
-          <div className="flex items-center space-x-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 inline-block"></span>
-            <span>Structured Track Points (Hover to inspect)</span>
-          </div>
+            {trajectory.map((pt, idx) => {
+              const cx = mapX(pt.normalized_time);
+              const cy = mapY(pt.actual_energy);
+              const isActive = activeTrackId === pt.track_id;
+              const show = () => setHoveredPoint(pt);
+              const hide = () => setHoveredPoint(null);
+              return (
+                <g key={idx} className="cursor-pointer" tabIndex={0} role="button"
+                  aria-label={`Preview track ${pt.index}, ${pt.track_title}`}
+                  onClick={() => onTrackSelect && onTrackSelect(pt.track_id)}
+                  onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onTrackSelect?.(pt.track_id); } }}
+                  onMouseEnter={show} onMouseLeave={hide} onFocus={show} onBlur={hide}>
+                  <line x1={cx} y1={mapY(pt.target_energy)} x2={cx} y2={cy} stroke={INK} strokeOpacity=".25" />
+                  {isActive && <circle cx={cx} cy={cy} r="11" fill="none" stroke={ACCENT} strokeWidth="2" />}
+                  <circle cx={cx} cy={cy} r={isActive ? 7 : 5.5} fill={genreColor(pt.genre)} stroke="#f3eee4" strokeWidth="2" />
+                </g>
+              );
+            })}
+
+            <text x={paddingLeft} y={svgHeight - 4} fill={MUTED} fontSize="10" fontFamily="JetBrains Mono, monospace">0:00</text>
+            <text x={paddingLeft + plotWidth / 2} y={svgHeight - 4} fill={MUTED} fontSize="10" textAnchor="middle" fontFamily="JetBrains Mono, monospace">midpoint</text>
+            <text x={svgWidth - paddingRight} y={svgHeight - 4} fill={MUTED} fontSize="10" textAnchor="end" fontFamily="JetBrains Mono, monospace">{playlist.actual_duration_formatted}</text>
+          </svg>
         </div>
 
-        {/* Genre Color Code Chips */}
-        <div className="flex flex-wrap items-center gap-2">
-          {Object.entries(GENRE_DOT_COLORS).map(([gName, color]) => (
-            <div key={gName} className="flex items-center space-x-1">
-              <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: color }}></span>
-              <span className="text-[10px] text-slate-400">{gName}</span>
-            </div>
+        <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-ink-soft">
+          <span className="flex items-center gap-2"><span className="w-6 h-[2.5px] bg-accent inline-block" />Target curve</span>
+          <span className="flex items-center gap-2"><span className="w-6 border-t-[1.5px] border-dashed border-ink inline-block" />Tracklist energy</span>
+          <span className="w-px h-4 bg-rule hidden sm:inline-block" />
+          {usedGenres.map(name => (
+            <span key={name} className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: genreColor(name) }} />{name}
+            </span>
           ))}
         </div>
-      </div>
+      </figure>
     </div>
   );
 }

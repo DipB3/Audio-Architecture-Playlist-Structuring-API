@@ -96,7 +96,7 @@ export async function fetchHealth() {
       "AWS Lambda (Serverless Compute)",
       "Amazon API Gateway (HTTP API v2)",
       "Amazon DynamoDB (NoSQL Data & History)",
-      "Amazon S3 (Catalog & Export Bundles)",
+      "Amazon S3 (Playlist Export Bundles)",
       "Amazon CloudWatch & AWS Budgets (DevOps & Alerts)"
     ]
   };

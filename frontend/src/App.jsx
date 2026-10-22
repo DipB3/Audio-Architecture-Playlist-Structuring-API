@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Header from './components/Header';
 import EnergyCurveSelector from './components/EnergyCurveSelector';
 import CustomCurveEditor from './components/CustomCurveEditor';
@@ -17,7 +17,7 @@ import CustomTrackManager from './components/CustomTrackManager';
 
 import { fetchGenres, fetchPresets, fetchPlaylist, fetchCustomTracks, fetchTracks, generatePlaylist } from './services/api';
 import { audioSynth } from './services/audioSynthesizer';
-import { Sparkles, Play, Download, RefreshCw } from 'lucide-react';
+import { ArrowRight, ArrowDown } from 'lucide-react';
 
 const DEMO_SESSIONS = [
   { name: 'Deep work', description: 'A focused rise, steady peak, and gentle finish.', duration: 45, curve: 'pomodoro_peak', genres: ['Contemporary Classical Piano', 'Ambient', 'Neo-Soul'] },
@@ -67,6 +67,7 @@ export default function App() {
 
   // Audio Playback State
   const [activeTrack, setActiveTrack] = useState(null);
+  const resultsRef = useRef(null);
 
   // Modals
   const [isExportOpen, setIsExportOpen] = useState(false);
@@ -90,6 +91,13 @@ export default function App() {
     })
     return () => { active = false; };
   }, []);
+
+  // Bring freshly generated or reloaded results into view.
+  useEffect(() => {
+    if (!playlist || !resultsRef.current) return;
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    resultsRef.current.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
+  }, [playlist]);
 
   const refreshCatalog = async () => {
     const [gList, custom, tracks] = await Promise.all([fetchGenres(), fetchCustomTracks(), fetchTracks()]);
@@ -159,175 +167,186 @@ export default function App() {
     setActiveTrack(null);
   };
 
+  const curveName = presets.find(preset => preset.id === selectedCurve)?.name || selectedCurve.replace(/_/g, ' ');
+
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-cyan-500 selection:text-slate-950">
+    <div className="min-h-screen flex flex-col">
       <a href="#main-content" className="skip-link">Skip to main content</a>
-      
-      {/* Top Header */}
+
       <Header
         onOpenHistory={() => setIsHistoryOpen(true)}
         onOpenHealth={() => setIsHealthOpen(true)}
         onOpenDocs={() => setIsDocsOpen(true)}
       />
 
-      {/* Main Workspace */}
-      <main id="main-content" className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 pb-28">
-        <section aria-labelledby="intro-title" className="overview-panel rounded-2xl border border-cyan-900/60 p-6 sm:p-8">
-          <p className="text-xs uppercase tracking-[.22em] font-bold text-cyan-300">Plan the flow, hear the shape</p>
-          <h2 id="intro-title" className="mt-2 text-2xl sm:text-3xl font-bold tracking-tight text-white">Build a playlist around how you want to feel.</h2>
-          <p className="mt-3 max-w-3xl text-sm sm:text-base text-slate-200">Set a session length, blend genres, and choose an energy journey. The optimizer plans track order using tempo, harmonic compatibility, and energy fit.</p>
-          <div className="mt-5 flex flex-wrap gap-2 text-xs"><span className="overview-stat">{catalogCount || '…'} demo + custom tracks</span><span className="overview-stat">7 energy curves</span><span className="overview-stat">M3U · JSON · CSV exports</span><span className="overview-stat">Metadata-only demo</span></div>
-          <nav aria-label="Project sections" className="mt-5 flex flex-wrap gap-4 text-sm font-semibold"><a href="#session-builder" className="text-cyan-200 hover:text-white">Build a session</a><a href="#custom-tracks" className="text-cyan-200 hover:text-white">Add your songs</a><a href="#project-overview" className="text-cyan-200 hover:text-white">How it works</a></nav>
-        </section>
-
-        <section aria-labelledby="demos-title" className="space-y-3">
-          <div><h2 id="demos-title" className="text-lg font-bold text-white">Try a listening scenario</h2><p className="text-sm text-slate-300">Choose a starting point, adjust anything below, then generate your playlist.</p></div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">{DEMO_SESSIONS.map(demo => <button key={demo.name} type="button" onClick={() => { setDuration(demo.duration); setSelectedCurve(demo.curve); setSelectedGenres(demo.genres); setSessionName(demo.name); }} className="text-left rounded-xl bg-slate-900 border border-slate-700 hover:border-cyan-400 p-4 transition-colors"><strong className="block text-white text-sm">{demo.name}</strong><span className="block mt-1 text-xs text-slate-300">{demo.description}</span><span className="block mt-3 text-xs text-cyan-300">{demo.duration} min · {demo.genres.length} genres</span></button>)}</div>
-        </section>
-        
-        {/* Module 1: User Interface Module (Input Controls) */}
-        <section id="session-builder" aria-labelledby="builder-title" className="bg-slate-900/70 border border-slate-700 rounded-2xl p-5 shadow-2xl space-y-5">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-slate-800">
-            <div>
-              <h2 id="builder-title" className="text-sm font-bold text-white flex items-center space-x-2">
-                <Sparkles className="w-4 h-4 text-cyan-400" />
-                <span>Audio Architecture Session Parameters</span>
-              </h2>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Configure energy flow curves, multi-genre selection, and duration target.
-              </p>
-            </div>
-
-            {/* Generate Action Button */}
-            <button
-              onClick={handleGenerate}
-              disabled={isGenerating}
-              className="flex items-center justify-center space-x-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 via-indigo-500 to-purple-600 hover:from-cyan-400 hover:to-purple-500 text-white text-xs font-bold shadow-lg shadow-cyan-500/20 active:scale-95 transition-all disabled:opacity-50 shrink-0"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${isGenerating ? 'animate-spin' : ''}`} />
-              <span>{isGenerating ? 'Synthesizing Architecture...' : 'Generate Audio Architecture'}</span>
-            </button>
+      <main id="main-content" className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-32 space-y-16">
+        {/* Introduction and scenario starters */}
+        <section aria-labelledby="intro-title" className="grid lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] gap-x-14 gap-y-10">
+          <div>
+            <p className="eyebrow">Plan the flow · hear the shape</p>
+            <h2 id="intro-title" className="mt-4 font-display text-[2.6rem] sm:text-6xl leading-[1.02] font-semibold tracking-tight">
+              Playlists shaped like the <em className="font-normal text-accent">session</em> you want.
+            </h2>
+            <p className="mt-6 max-w-xl text-base text-ink-soft leading-relaxed">
+              Pick a length, blend genres and draw an energy curve. The optimizer orders tracks by tempo,
+              harmonic key and energy fit, then shows you exactly how close it got.
+            </p>
+            <p className="mt-6 font-mono text-xs text-muted">
+              {catalogCount || '…'} tracks / 7 energy curves / M3U · JSON · CSV / metadata-only demo
+            </p>
           </div>
 
-          {errorMessage && (
-            <div className="rounded-xl border border-red-700/60 bg-red-950/50 px-4 py-3 text-xs text-red-200" role="alert">
-              {errorMessage}
-            </div>
-          )}
-
-          {/* 1. Energy Curves */}
-          <EnergyCurveSelector
-            presets={presets}
-            selectedCurve={selectedCurve}
-            onSelectCurve={(id) => setSelectedCurve(id)}
-          />
-
-          {/* Custom Curve Editor if custom curve chosen */}
-          {selectedCurve === 'custom' && (
-            <CustomCurveEditor
-              customPoints={customPoints}
-              onChangePoints={(pts) => setCustomPoints(pts)}
-            />
-          )}
-
-          {/* 2. Multi-Genre Curation */}
-          <GenreSelector
-            genres={genres}
-            selectedGenres={selectedGenres}
-            onToggleGenre={handleToggleGenre}
-            onSelectAll={handleSelectAllGenres}
-          />
-
-          {/* 3. Duration Target */}
-          <DurationPicker
-            duration={duration}
-            onDurationChange={(d) => setDuration(d)}
-          />
-
-          {/* Advanced Optimizer Weights */}
-          <ParameterControls
-            weights={weights}
-            onChangeWeights={(w) => setWeights(w)}
-          />
-          <SessionControls options={options} onChange={setOptions} catalog={catalogTracks}
-            name={sessionName} onNameChange={setSessionName} />
+          <div aria-labelledby="demos-title">
+            <h2 id="demos-title" className="eyebrow">Start from a scenario</h2>
+            <ol className="mt-3 border-t-[1.5px] border-ink">
+              {DEMO_SESSIONS.map((demo, index) => (
+                <li key={demo.name} className="border-b border-rule">
+                  <button type="button"
+                    onClick={() => { setDuration(demo.duration); setSelectedCurve(demo.curve); setSelectedGenres(demo.genres); setSessionName(demo.name); }}
+                    className="group w-full text-left flex items-baseline gap-4 py-4 hover:text-accent-ink transition-colors">
+                    <span className="font-mono text-xs text-muted w-6 shrink-0">0{index + 1}</span>
+                    <span className="flex-1 min-w-0">
+                      <span className="block font-display text-xl font-medium">{demo.name}</span>
+                      <span className="block text-sm text-muted mt-0.5">{demo.description}</span>
+                    </span>
+                    <span className="font-mono text-xs text-muted shrink-0">{demo.duration}m</span>
+                    <ArrowRight aria-hidden="true" className="w-4 h-4 shrink-0 self-center opacity-40 group-hover:opacity-100 group-hover:translate-x-0.5 transition" />
+                  </button>
+                </li>
+              ))}
+            </ol>
+            <p className="mt-3 text-xs text-muted">A scenario fills in the builder below; you can still change anything.</p>
+          </div>
         </section>
+
+        {/* Session builder with a sticky summary */}
+        <section id="session-builder" aria-labelledby="builder-title" className="border-t-[1.5px] border-ink pt-8">
+          <h2 id="builder-title" className="sr-only">Session builder</h2>
+          <div className="grid lg:grid-cols-[minmax(0,1fr)_300px] gap-x-14 gap-y-10">
+            <div className="space-y-14">
+              <div>
+                <StepHeading letter="A" id="curve-title" title="Energy shape" hint="How intensity should rise and fall across the session." />
+                <EnergyCurveSelector presets={presets} selectedCurve={selectedCurve} onSelectCurve={(id) => setSelectedCurve(id)} />
+                {selectedCurve === 'custom' && (
+                  <CustomCurveEditor customPoints={customPoints} onChangePoints={(pts) => setCustomPoints(pts)} />
+                )}
+              </div>
+
+              <div>
+                <StepHeading letter="B" id="genre-title" title="Genres" hint="The optimizer bridges between them using tempo and key." />
+                <GenreSelector genres={genres} selectedGenres={selectedGenres}
+                  onToggleGenre={handleToggleGenre} onSelectAll={handleSelectAllGenres} />
+              </div>
+
+              <div>
+                <StepHeading letter="C" id="duration-title" title="Length" hint="Between 15 minutes and 3 hours." />
+                <DurationPicker duration={duration} onDurationChange={(d) => setDuration(d)} />
+              </div>
+
+              <div>
+                <StepHeading letter="D" id="tuning-title" title="Fine tuning" hint="Optional. The defaults work well." />
+                <div className="border-t border-rule">
+                  <ParameterControls weights={weights} onChangeWeights={(w) => setWeights(w)} />
+                  <SessionControls options={options} onChange={setOptions} catalog={catalogTracks}
+                    name={sessionName} onNameChange={setSessionName} />
+                </div>
+              </div>
+            </div>
+
+            <aside aria-label="Session summary" className="lg:sticky lg:top-6 self-start border-t-4 border-ink pt-4">
+              <p className="eyebrow">Cue sheet</p>
+              <dl className="mt-3 text-sm">
+                <SummaryRow label="Name" value={sessionName.trim() || 'Untitled session'} />
+                <SummaryRow label="Shape" value={curveName} />
+                <SummaryRow label="Length" value={`${duration} min`} mono />
+                <SummaryRow label="Genres" value={selectedGenres.join(', ')} />
+                {options.excluded_track_ids.length > 0 &&
+                  <SummaryRow label="Excluded" value={`${options.excluded_track_ids.length} tracks`} mono />}
+              </dl>
+              <button type="button" onClick={handleGenerate} disabled={isGenerating} className="btn btn-ink w-full mt-6 !py-3.5 !text-base">
+                {isGenerating ? 'Arranging tracks…' : 'Generate playlist'}
+                {!isGenerating && <ArrowDown aria-hidden="true" className="w-4 h-4" />}
+              </button>
+              {errorMessage && (
+                <p role="alert" className="mt-4 border-l-[3px] border-accent pl-3 text-sm text-accent-ink">{errorMessage}</p>
+              )}
+              <p className="mt-4 text-xs text-muted leading-relaxed">Generated sessions are saved to History and can be exported.</p>
+            </aside>
+          </div>
+        </section>
+
+        {/* Results */}
+        {playlist && (
+          <section ref={resultsRef} aria-labelledby="result-title" className="border-t-[1.5px] border-ink pt-8 space-y-10 scroll-mt-6">
+            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+              <div className="min-w-0">
+                <p className="eyebrow">
+                  {playlist.diagnostics?.engine === 'browser-greedy' ? 'Offline browser generation' : 'Generated by the API'}
+                  {playlist.diagnostics?.execution_ms != null && ` · ${playlist.diagnostics.execution_ms} ms · ${playlist.diagnostics.eligible_track_count} eligible tracks`}
+                </p>
+                <h2 id="result-title" className="mt-3 font-display text-4xl sm:text-5xl font-semibold tracking-tight break-words">{playlist.name}</h2>
+                <p className="mt-3 font-mono text-sm text-ink-soft">
+                  {playlist.track_count} tracks / {playlist.actual_duration_formatted} / {playlist.genres_used.length} genres
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2 shrink-0">
+                <button type="button" onClick={handlePlayContinuous} className="btn btn-ink" title="Play synthesized previews of every track in order">
+                  Play walkthrough
+                </button>
+                <button type="button" onClick={() => setIsExportOpen(true)} className="btn btn-line">Export</button>
+              </div>
+            </div>
+
+            <div className="space-y-1 text-sm" role="status">
+              <p className="text-muted">Previews are synthesized motifs. Exports reference audio files you supply.</p>
+              {(playlist.diagnostics?.warnings || []).map(warning =>
+                <p key={warning} className="border-l-[3px] border-mustard pl-3 text-ink">{warning}</p>)}
+            </div>
+
+            <EnergyCurveVisualizer
+              playlist={playlist}
+              activeTrackId={activeTrack ? activeTrack.id : null}
+              onTrackSelect={(trackId) => {
+                const trk = playlist.tracks.find(t => t.id === trackId);
+                if (trk) handlePlayTrack(trk);
+              }}
+            />
+
+            <TracklistTable
+              playlist={playlist}
+              activeTrackId={activeTrack ? activeTrack.id : null}
+              onPlayTrack={handlePlayTrack}
+              onStopAudio={handleStopAudio}
+            />
+          </section>
+        )}
 
         <CustomTrackManager genres={genres} tracks={customTracks} onChanged={refreshCatalog} />
 
-        <section id="project-overview" aria-labelledby="project-title" className="grid gap-3 md:grid-cols-3">
-          <h2 id="project-title" className="md:col-span-3 text-lg font-bold text-white">What this project demonstrates</h2>
-          <article className="overview-card"><h3>01 / Structure</h3><p>Seven target energy profiles, duration-aware beam search, transition scores, and tunable weights.</p></article>
-          <article className="overview-card"><h3>02 / Experience</h3><p>Interactive trajectory, track previews, session history, custom metadata, and portable exports.</p></article>
-          <article className="overview-card"><h3>03 / Delivery</h3><p>Local demo today; Terraform and CI/CD prepared for an AWS deployment once account setup is complete.</p></article>
-        </section>
-
-        {/* Action Bar for Generated Output */}
-        {playlist && (
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-slate-900/90 border border-cyan-800/40 rounded-xl p-4 shadow-lg">
-            <div>
-              <div className="flex items-center space-x-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
-                <h3 className="text-xs font-bold text-white uppercase tracking-wider">{playlist.name}</h3>
-              </div>
-              <p className="text-[11px] text-slate-400 mt-0.5 font-mono">
-                {playlist.track_count} Tracks &bull; {playlist.actual_duration_formatted} &bull; {playlist.genres_used.length} Genres Integrated
-              </p>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={handlePlayContinuous}
-                className="flex items-center space-x-1.5 px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold text-xs shadow-md shadow-emerald-500/20 transition-all"
-                title="Play full continuous synthesized sequence"
-              >
-                <Play className="w-3.5 h-3.5 fill-current" />
-                <span>Play Continuous Walkthrough</span>
-              </button>
-
-              <button
-                onClick={() => setIsExportOpen(true)}
-                className="flex items-center space-x-1.5 px-3.5 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs shadow-md shadow-cyan-500/20 transition-all"
-                title="Export playlist to M3U, JSON, or CSV"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>Export Playlist</span>
-              </button>
-            </div>
+        <section id="project-overview" aria-labelledby="project-title" className="border-t-[1.5px] border-ink pt-8">
+          <h2 id="project-title" className="eyebrow">What this project demonstrates</h2>
+          <div className="mt-6 grid md:grid-cols-3 md:divide-x divide-rule">
+            {[
+              ['Structure', 'Seven target energy profiles, duration-aware beam search, transition scores and tunable weights.'],
+              ['Experience', 'Interactive trajectory, track previews, session history, custom metadata and portable exports.'],
+              ['Delivery', 'Runs locally today. Terraform and CI/CD are prepared for AWS once account setup is complete.'],
+            ].map(([title, text], index) => (
+              <article key={title} className="py-4 md:py-0 md:px-8 first:md:pl-0 border-b md:border-b-0 border-rule last:border-b-0">
+                <p className="font-mono text-xs text-accent-ink">0{index + 1}</p>
+                <h3 className="mt-2 font-display text-2xl font-medium">{title}</h3>
+                <p className="mt-2 text-sm text-ink-soft leading-relaxed">{text}</p>
+              </article>
+            ))}
           </div>
-        )}
-
-        {/* Module 2: Visualization of Audio Architecture Trajectory */}
-        {playlist && <div className="text-xs text-slate-300 space-y-2" role="status">
-          <p>{playlist.diagnostics?.engine === 'browser-greedy' ? 'Offline browser generation' : 'API playlist generation'}
-            {playlist.diagnostics?.execution_ms != null && ` · ${playlist.diagnostics.execution_ms} ms · ${playlist.diagnostics.eligible_track_count} eligible tracks`}
-          </p>
-          <p className="text-slate-400">Audio previews are synthesized motifs. Playlist exports refer to audio files you supply.</p>
-          {(playlist.diagnostics?.warnings || []).map(warning =>
-            <p key={warning} className="text-amber-300">{warning}</p>)}
-        </div>}
-        {playlist && (
-          <EnergyCurveVisualizer
-            playlist={playlist}
-            activeTrackId={activeTrack ? activeTrack.id : null}
-            onTrackSelect={(trackId) => {
-              const trk = playlist.tracks.find(t => t.id === trackId);
-              if (trk) handlePlayTrack(trk);
-            }}
-          />
-        )}
-
-        {/* Module 3 & 4: Structured Tracklist & Transitions */}
-        {playlist && (
-          <TracklistTable
-            playlist={playlist}
-            activeTrackId={activeTrack ? activeTrack.id : null}
-            onPlayTrack={handlePlayTrack}
-            onStopAudio={handleStopAudio}
-          />
-        )}
-
+        </section>
       </main>
+
+      <footer className="border-t-[1.5px] border-ink">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col sm:flex-row sm:justify-between gap-2 text-xs text-muted">
+          <p>Dipankar Banerjee (240905618) · Pratham Shah (240905614) · Vaibhav Bhatia (240905504)</p>
+          <p>Team 6 · Batch B2 · Supervisor: Dr. Soumya Nandan Mishra</p>
+        </div>
+      </footer>
 
       {/* Persistent Audio Synthesizer Player Bar */}
       <AudioPlayerBar
@@ -370,6 +389,27 @@ export default function App() {
         onClose={() => setIsDocsOpen(false)}
       />
 
+    </div>
+  );
+}
+
+function StepHeading({ letter, id, title, hint }) {
+  return (
+    <div className="mb-5 flex items-baseline gap-4">
+      <span aria-hidden="true" className="font-display italic text-3xl text-accent leading-none w-6">{letter}</span>
+      <div>
+        <h3 id={id} className="font-display text-2xl font-semibold tracking-tight">{title}</h3>
+        <p className="text-sm text-muted mt-0.5">{hint}</p>
+      </div>
+    </div>
+  );
+}
+
+function SummaryRow({ label, value, mono }) {
+  return (
+    <div className="flex gap-4 py-2 border-b border-rule">
+      <dt className="w-20 shrink-0 text-muted">{label}</dt>
+      <dd className={`min-w-0 break-words ${mono ? 'font-mono' : ''}`}>{value}</dd>
     </div>
   );
 }

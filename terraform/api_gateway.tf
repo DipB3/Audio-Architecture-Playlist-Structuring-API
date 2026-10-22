@@ -38,6 +38,13 @@ resource "aws_apigatewayv2_stage" "default_stage" {
   name        = "$default"
   auto_deploy = true
 
+  # Stage-wide throttling caps request volume (and Lambda cost) for the public
+  # endpoint. Excess requests receive 429 Too Many Requests.
+  default_route_settings {
+    throttling_rate_limit  = var.api_throttle_rate_limit
+    throttling_burst_limit = var.api_throttle_burst_limit
+  }
+
   access_log_settings {
     destination_arn = aws_cloudwatch_log_group.api_gateway_logs.arn
     format = jsonencode({

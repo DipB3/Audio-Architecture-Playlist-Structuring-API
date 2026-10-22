@@ -36,63 +36,97 @@ Listeners face several systemic barriers when attempting to curate functional, e
 
 ## 3. Solution Architecture
 
-The system is architected as a decoupled, event-driven serverless system on **Amazon Web Services (AWS)** using managed services provisioned declaratively via **Terraform (Infrastructure as Code)** and automated with **GitHub Actions (CI/CD)**. CloudFront serves the compiled React application from a private S3 origin, while API Gateway exposes the Lambda API.
+The system is a serverless application on **Amazon Web Services (AWS)**. All
+cloud resources are declared in **Terraform** and released through a gated
+**GitHub Actions** pipeline. CloudFront serves the compiled React application
+from a private S3 bucket, and API Gateway forwards API calls to a single Lambda
+function. The resources below are *defined* in `terraform/`; no live deployment
+has been verified yet (see `DEPLOYMENT.md`).
 
 ```mermaid
 flowchart TD
     subgraph ClientLayer ["Client Layer (User Interface Module)"]
         UI["React Web Dashboard\n(Vite + Tailwind CSS)"]
-        WebAudio["Web Audio API\nSynthesizer Engine"]
+        WebAudio["Web Audio API\nSynthesized previews"]
     end
 
-    subgraph IngressLayer ["Ingress & Routing (AWS Managed Service 1)"]
-        APIGW["Amazon API Gateway HTTP API v2\n(Proxy Routing, CORS, Logging)"]
+    subgraph EdgeLayer ["Static Delivery"]
+        CF["Amazon CloudFront\n(HTTPS, origin access control)"]
+        FrontendBucket[("Amazon S3\nprivate frontend bucket")]
     end
 
-    subgraph ComputeLayer ["Serverless Compute (AWS Managed Service 2)"]
-        Lambda["AWS Lambda Function\n(Python 3.11 Serverless Engine)\n- Mathematical Curves\n- Camelot Harmonic Wheel\n- Beam Search Optimizer"]
+    subgraph IngressLayer ["Ingress & Routing"]
+        APIGW["Amazon API Gateway HTTP API\n($default route, CORS,\nthrottling, access logs)"]
     end
 
-    subgraph StorageLayer ["Data & Storage Module (AWS Managed Services 3 & 4)"]
-        DynamoDB[("Amazon DynamoDB\n'AudioArchitectures' Table\n(Pay-Per-Request, NoSQL)")]
-        S3Bucket[("Amazon S3 Bucket\n'audio-assets'\n(Catalog & Export Artifacts)")]
+    subgraph ComputeLayer ["Serverless Compute (Audio Architecture Engine)"]
+        Lambda["AWS Lambda (Python 3.11)\n- Energy curves\n- Camelot harmonic scoring\n- Beam search optimizer\n- Bundled 118-track catalog"]
     end
 
-    subgraph DevOpsLayer ["DevOps, Governance & Budgets (Guideline 7)"]
-        CW["Amazon CloudWatch\nStructured Logs & Tracing"]
-        BudgetAlerts["AWS Budgets\nCost Alerting ($5.00 Limit)"]
-        GHActions["GitHub Actions\nCI/CD Automated Testing"]
-        Terraform["Terraform\nDeclarative IaC Stacks"]
+    subgraph StorageLayer ["Data & Storage Module"]
+        PlaylistTable[("DynamoDB\nplaylist table\n+ UserPlaylistIndex")]
+        CustomTable[("DynamoDB\ncustom-tracks table")]
+        ExportBucket[("Amazon S3\nprivate export bucket\n(30-day expiry)")]
     end
 
-    UI -->|"HTTP REST API Requests"| APIGW
-    APIGW -->|"AWS_PROXY Integration"| Lambda
-    Lambda -->|"Read/Write Architectures & History"| DynamoDB
-    Lambda -->|"Fetch Catalog / Upload M3U & CSV"| S3Bucket
-    Lambda -->|"Execution Telemetry"| CW
-    APIGW -->|"Access Logs"| CW
-    UI -.->|"Interactive Preview Playback"| WebAudio
-    GHActions -->|"Validate, Test & Plan"| Terraform
-    Terraform -->|"Provisions Cloud Infrastructure"| APIGW
-    Terraform -->|"Provisions Cloud Infrastructure"| Lambda
-    Terraform -->|"Provisions Cloud Infrastructure"| DynamoDB
-    Terraform -->|"Provisions Cloud Infrastructure"| S3Bucket
-    Terraform -->|"Enforces Budget Guardrails"| BudgetAlerts
+    subgraph DevOpsLayer ["DevOps & Governance"]
+        CW["Amazon CloudWatch Logs\n(Lambda + API access logs)"]
+        BudgetAlerts["AWS Budgets\n($5 monthly alert)"]
+        GHActions["GitHub Actions\n(tests, plan, approved apply)"]
+        Terraform["Terraform\n(S3 remote state)"]
+    end
+
+    UI -->|"Loads app"| CF
+    CF -->|"Signed origin requests"| FrontendBucket
+    UI -->|"HTTPS JSON requests"| APIGW
+    APIGW -->|"AWS_PROXY (payload v2.0)"| Lambda
+    Lambda -->|"Playlists & history"| PlaylistTable
+    Lambda -->|"Custom track metadata"| CustomTable
+    Lambda -->|"M3U / JSON / CSV exports"| ExportBucket
+    Lambda -->|"Execution logs"| CW
+    APIGW -->|"Access logs"| CW
+    UI -.->|"Preview playback"| WebAudio
+    GHActions -->|"Plan, then apply saved plan"| Terraform
+    Terraform -->|"Provisions"| APIGW
+    Terraform -->|"Provisions"| Lambda
+    Terraform -->|"Provisions"| StorageLayer
+    Terraform -->|"Provisions"| EdgeLayer
+    Terraform -->|"Creates alert"| BudgetAlerts
 ```
 
-### AWS Managed Services Utilized (Adhering to Guideline 4 & 7):
-1. **AWS Lambda:** Executes the metadata sequencing engine without maintaining a dedicated server. Actual deployed latency and account costs require measurement.
-2. **Amazon API Gateway (HTTP API v2):** Provides low-latency entrypoint management, automatic CORS preflight handling, JSON payload routing, and integration with CloudWatch access logging.
-3. **Amazon DynamoDB:** Fully managed NoSQL table using `PAY_PER_REQUEST` billing mode, providing sub-10ms persistence for structured playlists, curve parameters, and historical generations.
-4. **Amazon S3:** Object storage hosting the acoustic track catalog dataset and storing packaged playlist exports (`.m3u`, `.json`, `.csv`) with a 30-day lifecycle expiration rule.
-5. **Amazon CloudFront:** HTTPS content delivery for the React single-page application backed by a private S3 origin.
-6. **AWS Budgets & CloudWatch:** A \$5.00 notification threshold plus execution and access logging. Budget alerts notify the team but do not enforce a hard spending cap.
+### AWS Managed Services
+1. **AWS Lambda:** Runs the sequencing engine. The track catalog is packaged
+   with the function and loaded once per execution environment. Memory 256 MB,
+   timeout 30 s.
+2. **Amazon API Gateway (HTTP API):** Single `$default` route to Lambda, CORS
+   handling, CloudWatch access logs and stage-wide throttling (default 5
+   requests/second, burst 10; excess requests receive `429`).
+3. **Amazon DynamoDB:** Two on-demand tables. The playlist table stores
+   generated playlists and serves history through `UserPlaylistIndex`; the
+   custom-tracks table stores user-added track metadata.
+4. **Amazon S3:** A private export bucket for M3U, JSON and CSV files, returned
+   to the browser as one-hour presigned links and expired after 30 days, and a
+   private bucket holding the compiled React application.
+5. **Amazon CloudFront:** HTTPS delivery of the React application from the
+   private frontend bucket through origin access control.
+6. **Amazon CloudWatch and AWS Budgets:** Lambda and API Gateway logs (14-day
+   retention) and a $5.00 monthly budget with 80%, 100% and forecast alerts.
+   Budget alerts notify the team; they do not cap spending.
+
+Tooling: Terraform (infrastructure as code) and GitHub Actions (CI/CD).
 
 ---
 
 ## 4. Application Architecture
 
-The system consists of the four foundational modules outlined in the project synopsis:
+The system consists of the four modules defined in the project synopsis:
+
+| Synopsis module | Implementation |
+| :--- | :--- |
+| User Interface | React dashboard (`frontend/src/`): duration, genres, preset or custom energy curve, BPM bounds, exclusions, crossfade, scenario starters, custom-track form, history and export dialogs. |
+| Audio Architecture Engine (API) | Lambda handler (`backend/app/lambda_handler.py`) with request validation and the engine in `backend/app/engine/`. |
+| Data & Storage | `backend/app/storage/`: DynamoDB adapters for playlists and custom tracks, with a local-disk adapter for development. In AWS, storage failures return `503` instead of silently using temporary Lambda disk. |
+| Export & Integration | `backend/app/export/exporters.py`: Extended M3U, JSON and CSV, stored in S3 and returned to the browser. |
 
 ```mermaid
 sequenceDiagram
@@ -101,132 +135,182 @@ sequenceDiagram
     participant UI as User Interface Module (React)
     participant API as API Gateway & Lambda (Engine)
     participant DB as Amazon DynamoDB
-    participant S3 as Amazon S3 Bucket
+    participant S3 as Amazon S3 Export Bucket
 
-    User->>UI: Selects Duration (45m), Genres (Classical, Indie Pop, Hip-Hop), Curve (Pomodoro)
-    User->>UI: Clicks "Generate Audio Architecture"
-    UI->>API: POST /playlists/generate (JSON payload)
-    API->>API: 1. Evaluate E(t) continuous trajectory
-    API->>API: 2. Filter & score candidate tracks
-    API->>API: 3. Execute Beam Search (Energy + Tempo + Camelot + Genre affinity)
-    API->>DB: PutItem: Persist playlist structure & metrics
-    API-->>UI: 200 OK (StructuredPlaylist JSON response)
-    UI->>UI: Render interactive SVG Target vs Actual energy curve
-    UI->>UI: Render tracklist table with Camelot harmonic indicators
-    User->>UI: Click track preview (Web Audio API synthesizes motif)
-    User->>UI: Clicks "Export Playlist" (selects Extended M3U)
-    UI->>API: POST /playlists/export (Format: M3U)
-    API->>S3: PutObject: Store exports/pl_xxx.m3u
-    API-->>UI: 200 OK (Content & S3 URI)
-    UI->>User: Initiates direct .m3u file download
+    User->>UI: Selects duration, genres and energy curve
+    User->>UI: Clicks "Generate"
+    UI->>API: POST /playlists/generate (JSON parameters)
+    API->>API: Validate request and build eligible catalog
+    API->>API: Beam search over energy, tempo, Camelot key and genre
+    API->>DB: PutItem (playlist, transitions, trajectory, metrics)
+    API-->>UI: 200 OK (structured playlist)
+    UI->>UI: Render target vs actual energy curve and transitions
+    User->>UI: Exports as Extended M3U
+    UI->>API: POST /playlists/export (playlist_id, format)
+    API->>DB: GetItem (stored playlist)
+    API->>S3: PutObject exports/pl_xxx.m3u
+    API-->>UI: 200 OK (content and presigned link)
+    UI->>User: Downloads the .m3u file
 ```
+
+The export endpoint reads the playlist from storage by ID and ignores any
+playlist body sent by the client, so a caller cannot overwrite another
+playlist's export file with arbitrary content.
+
+If the API is unreachable, the browser switches to a clearly labeled offline
+mode that uses a simpler greedy optimizer and browser storage.
 
 ---
 
 ## 5. Technical Designs
 
-The current engine uses duration-aware beam search with default width 12,
-three energy samples per track, cached transition features and elapsed-time
-diversity during pruning. It supports exclusions, BPM bounds, planned crossfade,
-repeat control and genre balance. The current scoring and limits are specified
-in MATHEMATICAL_FORMULATION.md, which supersedes the earlier midpoint-only
-equations and width-six implementation described below.
+`docs/MATHEMATICAL_FORMULATION.md` gives the complete scoring definitions.
+This section summarizes them.
 
 ### 5.1 Mathematical Energy Profiling Formulation
 
-The continuous target energy profile is represented as a real-valued function:
+The target energy profile is a function
 $$E_{\text{target}}(t): [0, 1] \rightarrow [0.05, 0.95]$$
-where $t = \frac{\tau}{D_{\text{target}}}$ is normalized session time, and $\tau$ is elapsed time in seconds.
+where $t = \frac{\tau}{D}$ is normalized session time, $\tau$ is elapsed
+seconds and $D$ is the session duration.
 
-#### Implemented Curve Equations:
+#### Implemented Curve Equations
 1. **Pomodoro Focus Peak:**
-   $$E_{\text{pomodoro}}(t) = \begin{cases} 
-   0.25 + 0.47 \left(\frac{t}{0.20}\right)^{1.3} & t < 0.20 \quad \text{(Warm-up)} \\ 
-   0.72 + 0.12 \sin\left(\frac{t - 0.20}{0.60} \cdot \pi\right) & 0.20 \le t \le 0.80 \quad \text{(Deep Work Peak)} \\ 
-   0.72 - 0.50 \left(\frac{t - 0.80}{0.20}\right)^{0.9} & t > 0.80 \quad \text{(Decompression)} 
+   $$E_{\text{pomodoro}}(t) = \begin{cases}
+   0.25 + 0.47 \left(\frac{t}{0.20}\right)^{1.3} & t < 0.20 \quad \text{(Warm-up)} \\
+   0.72 + 0.12 \sin\left(\frac{t - 0.20}{0.60} \cdot \pi\right) & 0.20 \le t \le 0.80 \quad \text{(Deep Work Peak)} \\
+   0.72 - 0.50 \left(\frac{t - 0.80}{0.20}\right)^{0.9} & t > 0.80 \quad \text{(Decompression)}
    \end{cases}$$
+2. **Continuous Ascent:** $E_{\text{ascent}}(t) = 0.20 + 0.68 \cdot t$
+3. **Decompression Glide:** $E_{\text{descent}}(t) = 0.88 - 0.68 \cdot t$
+4. **Interval Wave:** $E_{\text{wave}}(t) = 0.52 + 0.33 \sin(4\pi t - \pi/2)$
+5. **Steady-State Flow:** $E_{\text{steady}}(t) = 0.48 + 0.04 \sin(4\pi t)$
+6. **Sunset Transition:** $E_{\text{sunset}}(t) = 0.22 + \frac{0.62}{1 + e^{9(t - 0.45)}}$
+7. **Custom:** linear interpolation between 2 to 32 user control points
+   $(t_i, e_i)$ with unique $t_i \in [0, 1]$ and $e_i \in [0, 1]$.
 
-2. **Continuous Ascent:**
-   $$E_{\text{ascent}}(t) = 0.20 + 0.68 \cdot t$$
-
-3. **Interval Wave (HIIT / Sprints):**
-   $$E_{\text{wave}}(t) = 0.52 + 0.33 \sin(4\pi t - \pi/2)$$
-
-4. **Steady-State Flow:**
-   $$E_{\text{steady}}(t) = 0.48 + 0.04 \sin(4\pi t)$$
-
-5. **Sunset Transition:**
-   $$E_{\text{sunset}}(t) = 0.22 + \frac{0.62}{1 + e^{9(t - 0.45)}}$$
+All values are clamped to $[0.05, 0.95]$.
 
 ---
 
 ### 5.2 Harmonic Mixing & Camelot Wheel Matrix
 
-To eliminate harmonic clashing between adjacent tracks (especially across genres), the system encodes keys using the **Camelot Wheel notation** ($1\text{A}$ to $12\text{A}$ for minor, $1\text{B}$ to $12\text{B}$ for major).
-
-Given Camelot codes $C_1 = (h_1, m_1)$ and $C_2 = (h_2, m_2)$:
+Keys use **Camelot Wheel notation** ($1\text{A}$ to $12\text{A}$ for minor,
+$1\text{B}$ to $12\text{B}$ for major). For codes $C_1 = (h_1, m_1)$ and
+$C_2 = (h_2, m_2)$:
 1. Circular hour distance:
    $$d_{\text{hour}} = \min(|h_1 - h_2|, 12 - |h_1 - h_2|)$$
-2. Compatibility rules:
-   - **Exact Match:** $d_{\text{hour}} = 0 \land m_1 = m_2 \implies \text{Score} = 1.00$
-   - **Relative Major/Minor:** $d_{\text{hour}} = 0 \land m_1 \neq m_2 \implies \text{Score} = 0.92$
-   - **Adjacent Step (Fifth/Fourth):** $d_{\text{hour}} = 1 \land m_1 = m_2 \implies \text{Score} = 0.85$
-   - **Diagonal Modulation:** $d_{\text{hour}} = 1 \land m_1 \neq m_2 \implies \text{Score} = 0.75$
-   - **Energy Modulation Lift:** $d_{\text{hour}} = 2 \land m_1 = m_2 \implies \text{Score} = 0.65$
-   - **Harmonic Penalty:** $d_{\text{hour}} \ge 3 \implies \text{Score} = \max(0.10, 0.50 - 0.08 \cdot d_{\text{hour}})$
+2. Compatibility scores:
+   - **Exact match:** $d_{\text{hour}} = 0 \land m_1 = m_2 \implies 1.00$
+   - **Relative major/minor:** $d_{\text{hour}} = 0 \land m_1 \neq m_2 \implies 0.92$
+   - **Adjacent step:** $d_{\text{hour}} = 1 \land m_1 = m_2 \implies 0.85$
+   - **Diagonal modulation:** $d_{\text{hour}} = 1 \land m_1 \neq m_2 \implies 0.75$
+   - **Energy lift:** $d_{\text{hour}} = 2 \land m_1 = m_2 \implies 0.65$
+   - **Other transitions:** $\max(0.10,\ 0.50 - 0.08 \cdot d_{\text{hour}})$, reported as incompatible
+
+The five named cases count as compatible in the harmonic compatibility rate.
 
 ---
 
-### 5.3 Multi-Objective Beam Search Optimization Algorithm
+### 5.3 Duration-Aware Beam Search
 
-At each iterative step $k$ with candidate track $T$, the transition fitness from track $T_{\text{prev}}$ is calculated as:
-$$F(T, T_{\text{prev}}, t) = w_e \cdot S_{\text{energy}}(T, t) + w_t \cdot S_{\text{tempo}}(T, T_{\text{prev}}) + w_h \cdot S_{\text{harmonic}}(T, T_{\text{prev}}) + w_g \cdot S_{\text{genre}}(T, T_{\text{prev}})$$
+Each track has energy $e$, tempo $b$, Camelot key $c$, genre $g$ and duration
+$d$. With planned crossfade $x$, track $k$ starts at the sum of the preceding
+durations minus $x$ for each preceding transition.
 
-where:
-- **Energy Score:** $S_{\text{energy}} = 1.0 - |E(T) - E_{\text{target}}(t)|$
-- **Harmonic Tempo Score:** 
-  $$\Delta_{\text{bpm}} = \min(|\text{BPM}_T - \text{BPM}_{\text{prev}}|, |\text{BPM}_T - 2\text{BPM}_{\text{prev}}|, |2\text{BPM}_T - \text{BPM}_{\text{prev}}|)$$
-  $$S_{\text{tempo}} = \exp\left(-\frac{\Delta_{\text{bpm}}^2}{2 \cdot 12^2}\right)$$
-- **Harmonic Compatibility Score:** Obtained via the Camelot compatibility function.
-- **Genre Acoustic Affinity:** Evaluates whether intermediate bridge genres (e.g., Ambient between Classical and Hip-Hop) are deployed.
-- Beam search with beam width $B = 6$ evaluates the top candidate paths, pruning sub-optimal trajectories while avoiding local minima in $O(B \cdot |C|)$ time complexity.
+When track $T$ follows $T_{\text{prev}}$, the step score is
+$$F = w_e (1 - \varepsilon_E) + w_t S_{\text{tempo}} + w_h S_{\text{harmonic}} + w_g S_{\text{genre}}$$
+with default weights $w = (0.40, 0.25, 0.20, 0.15)$, normalized to sum to 1.
+
+- **Energy error** $\varepsilon_E$: mean of $|e - E_{\text{target}}|$ sampled at
+  15%, 50% and 85% of the track's playing time.
+- **Tempo affinity:** with
+  $\Delta_{\text{bpm}} = \min(|b_T - b_p|, |2b_T - b_p|, |b_T - 2b_p|)$ (direct,
+  half-time and double-time),
+  $S_{\text{tempo}} = \exp\left(-\frac{\Delta_{\text{bpm}}^2}{2 \cdot 12^2}\right)$.
+- **Harmonic score:** the Camelot score from Section 5.2.
+- **Genre score:** $(1 - \delta) \cdot \text{affinity}(g_p, g_T) + \delta \cdot \frac{1}{1 + n_g}$,
+  where $n_g$ counts earlier tracks of genre $g_T$ and $\delta$ is the
+  user-controlled diversity strength (default 0.25).
+- A repeat penalty of $\min(0.12,\ 0.035 \cdot \text{previous uses})$ applies
+  after the eligible catalog is exhausted.
+
+A beam state stores accumulated duration-weighted utility, elapsed seconds and
+the track sequence. Ineligible tracks (genre, BPM bounds, exclusions) are
+filtered first. At each step, the search expands every state with every
+eligible track, keeps paths that land within a tolerance of the target
+duration as completed candidates, and prunes the rest to the beam width
+$B = 12$ (configurable from 2 to 32). Pruning keeps distinct combinations of
+last track, 20-second elapsed-time bucket and genre set, so paths that could
+finish near the target are not all discarded. The search runs at most 128
+steps. Final ranking recomputes curve fit over the actual duration and adds
+duration-accuracy and genre-coverage terms.
+
+The cost is approximately $O(K \cdot B \cdot N)$ for $K$ steps and $N$ eligible
+tracks, with cached transition features and per-request curve errors. Beam
+search is a heuristic: it does not guarantee a global optimum, and whole-track
+durations can make some requests infeasible. Diagnostics report duration
+error, repeats and missing genres.
+
+Reported metrics: overall fit
+$= 0.4(1 - \text{energy error}) + 0.25 \cdot \text{tempo smoothness} + 0.2 \cdot \text{harmonic compatible fraction} + 0.15 \cdot \text{duration accuracy}$.
 
 ---
 
 ### 5.4 DynamoDB Data Model
 
-- **Table Name:** `AudioArchitectures`
-- **Partition Key (HASH):** `playlist_id` (String, e.g. `pl_a1b2c3d4e5f6`)
-- **Global Secondary Index (GSI):** `UserPlaylistIndex`
-  - Partition Key: `user_id` (String)
-  - Sort Key: `created_at` (String, ISO 8601)
-- **Attributes Stored:**
-  - `name`: String
-  - `target_duration_minutes`: Number
-  - `actual_duration_seconds`: Number
-  - `actual_duration_formatted`: String
-  - `curve_type`: String
-  - `genres_used`: List[String]
-  - `track_count`: Number
-  - `tracks`: List[Map] (id, title, artist, genre, bpm, key, camelot_code, energy)
-  - `transitions`: List[Map] (bpm_delta, camelot_distance, transition_score)
-  - `energy_trajectory`: List[Map] (time_sec, target_energy, actual_energy, delta)
-  - `metrics`: Map (overall_fit_score, avg_energy_error, tempo_smoothness_score, harmonic_compatibility_rate, duration_accuracy_percent)
+Table names follow `<project_name>-<environment>-…`; with the default
+variables they are as shown below.
+
+**Playlist table** (`audio-architecture-api-dev-architectures`, on-demand,
+point-in-time recovery enabled)
+- **Partition key:** `playlist_id` (String, e.g. `pl_a1b2c3d4e5f6`)
+- **Global secondary index `UserPlaylistIndex`:** partition key `user_id`
+  (String), sort key `created_at` (ISO 8601 String), projection `ALL`
+- **Attributes:** `name`, `target_duration_minutes`, `actual_duration_seconds`,
+  `actual_duration_formatted`, `track_count`, `genres_used`, `curve_type`,
+  `tracks` (full track snapshots, so saved playlists survive catalog changes),
+  `transitions`, `energy_trajectory`, `metrics` and `diagnostics` (engine,
+  timing, warnings, crossfade, custom points, 101 target samples). A
+  180-minute playlist measured about 46 KB, below the 400 KB item limit.
+
+**Custom-tracks table** (`audio-architecture-api-dev-custom-tracks`,
+on-demand, point-in-time recovery enabled)
+- **Partition key:** `id` (String, server-generated `trk_custom_<32 hex>`)
+- **Attributes:** `title`, `artist`, `genre`, `duration_seconds` (30–900),
+  `bpm` (40–220), `energy`, `musical_key`, `camelot_code`, `valence`,
+  `acousticness`, `danceability`. At most 500 custom records.
+
+The Lambda role may access only these two tables and the playlist index.
 
 ---
 
 ### 5.5 REST API Specifications
 
-| Method | Endpoint | Description | Status Code |
+| Method | Endpoint | Description | Status codes |
 | :--- | :--- | :--- | :--- |
-| `GET` | `/health` | Cloud infrastructure health & managed service diagnostics | `200 OK` |
-| `GET` | `/genres` | Catalog genres with track counts, tempo bounds, and energy | `200 OK` |
-| `GET` | `/presets` | Pre-calculated curve profiles and sampled SVG coordinates | `200 OK` |
-| `GET` | `/tracks` | Query acoustic track catalog with genre filtering | `200 OK` |
-| `POST` | `/playlists/generate` | Executes beam search optimization and persists to DynamoDB | `200 OK` |
-| `GET` | `/playlists/{id}` | Retrieves previously saved playlist from DynamoDB | `200 / 404` |
-| `GET` | `/playlists/history` | Lists recently generated playlist architectures | `200 OK` |
-| `POST` | `/playlists/export` | Generates Extended M3U, JSON, or CSV and stores in S3 | `200 OK` |
+| `GET` | `/health` | Catalog and storage readiness | `200` / `503` |
+| `GET` | `/genres` | Genre track counts, tempo bounds and average energy | `200` |
+| `GET` | `/presets` | Curve presets with sampled preview coordinates | `200` |
+| `GET` | `/tracks` | Seeded and custom catalog, optional genre filter, paginated | `200` / `400` |
+| `GET` | `/tracks/custom` | List custom track metadata | `200` |
+| `POST` | `/tracks/custom` | Create validated custom track metadata | `201` / `400` / `409` |
+| `DELETE` | `/tracks/custom/{id}` | Delete a custom track | `200` / `400` / `404` |
+| `POST` | `/playlists/generate` | Run the optimizer and store the playlist | `200` / `400` / `503` |
+| `GET` | `/playlists/{id}` | Retrieve a stored playlist | `200` / `400` / `404` |
+| `GET` | `/playlists/history` | Recent playlists for a `user_id` | `200` |
+| `POST` | `/playlists/export` | Export a stored playlist as M3U, JSON or CSV to S3 | `200` / `400` / `404` / `503` |
+
+Request and response details are in `docs/API_SPECIFICATION.md`. The deployed
+stage returns `429` when throttling limits are exceeded.
+
+**Current limitations.** The application is a shared guest demo: `user_id` is
+not authenticated, history and the custom catalog are shared by all visitors,
+and API CORS allows any origin. Authentication, per-user authorization and a
+restricted CORS origin are required before storing private data. Track records
+are fictional metadata, not audio recordings; previews are synthesized, M3U
+paths are placeholders for user-supplied files, and crossfade is a schedule,
+not rendered audio.
 
 ---
 
@@ -234,7 +318,7 @@ where:
 
 1. **Serverless Execution Profile:** The catalog loads once per execution environment. Local measurements appear in TEST_RESULTS.md. Cloud cold-start and warm invocation latency require measurement after deployment.
 2. **Harmonic Modular Arithmetic:** Treating Camelot keys as a cyclic group $\mathbb{Z}_{12}$ significantly simplified harmonic transition calculations and allowed seamless integration of double-time and half-time tempo shifts for genre boundary crossings.
-3. **Decoupled Local Simulation:** Equipping the codebase with a native local ASGI/HTTP gateway proxy ensured the team could develop, debug, and run live interactive demonstrations without requiring constant cloud deployments or incurring egress charges.
+3. **Decoupled Local Simulation:** A standard-library HTTP server (`backend/app/local_server.py`) that converts requests into API Gateway proxy events ensured the team could develop, debug, and run live interactive demonstrations without requiring constant cloud deployments or incurring egress charges.
 4. **Cloud Cost Discipline:** Budget notifications and S3 lifecycle rules help monitor costs. Actual account costs and free-tier eligibility require verification after deployment.
 
 ---
@@ -263,40 +347,30 @@ where:
 
 ## 8. Source Repository Link & Setup Instructions
 
-- **Source Repository:** Local Workspace & Git Initialized (`origin` ready for GitHub push)
-- **Local Run Instructions:**
-  ```powershell
-  # 1. Run backend unit test suite
-  python -m unittest discover -s backend/tests -v
+- **Source repository** (application code, Terraform and pipeline):
+  https://github.com/VaibhavBhatia-0/Audio-Architecture-Playlist-Structuring-API
+- **Infrastructure as code:** `terraform/`
+- **CI/CD pipeline:** `.github/workflows/ci-cd.yml`
 
-  # 2. Run local development server (API Gateway emulator + React Dashboard)
-  powershell -File scripts/run_local.ps1
-  ```
-- **Terraform Deployment Instructions:**
-  ```bash
-  cd terraform
-  terraform init
-  terraform plan -var-file="terraform.tfvars.example"
-  terraform apply -auto-approve
-  ```
-# Implementation update — 19 October 2026
+**Local run and verification** (Python 3.11+, Node 22.12+):
+```powershell
+npm --prefix frontend ci
+python -m unittest discover -s backend/tests -v
+python scripts/verify_project.py
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run_local.ps1
+```
 
-The repository now ships 118 fictional metadata records across the original
-seven genres. Four frontend scenario starters exercise distinct curves and
-genre combinations. Users can add custom track metadata; a local adapter saves
-it in ignored JSON files, while the planned AWS deployment uses a dedicated
-on-demand `custom_tracks` DynamoDB table keyed by `id`. The Lambda role has
-access only to the playlist table, its index, and the custom-track table.
+**Pipeline deployment.** Every push runs backend tests, the HTTP integration
+check, the frontend build and Terraform validation. When AWS deployment is
+enabled, a `production`-approved job creates a Terraform plan and publishes it
+in the run summary; a second approval applies exactly that saved plan, then
+publishes the frontend and runs the deployed smoke test. Account setup is in
+`docs/AWS_SETUP.md`.
 
-`GET /genres`, `GET /tracks`, optimizer eligibility and exclusions use the
-combined seeded/custom catalog. `GET/POST/DELETE /tracks/custom` implements
-catalog management with bounded metadata validation. Saved playlists retain
-track snapshots. A browser-local fallback supports an offline demonstration.
-
-The frontend now has semantic project sections, keyboard-operable selection
-controls, visible focus, a skip link and accessible dialogs. These changes do
-not establish full WCAG certification; further assistive-technology review is
-recommended before public release. AWS provisioning remains pending account
-setup. The current shared guest model requires authentication and per-user
-authorization before use with private data. See `DEPLOYMENT.md` for the
-verified status and remaining release work.
+**Manual deployment** (state bucket created beforehand):
+```powershell
+terraform -chdir=terraform init -backend-config="bucket=YOUR_STATE_BUCKET" -backend-config="key=audio-architecture/terraform.tfstate" -backend-config="region=us-east-1" -backend-config="encrypt=true"
+terraform -chdir=terraform plan -var-file=terraform.tfvars.example -out=tfplan
+terraform -chdir=terraform apply tfplan
+```
+Review the plan and expected costs before applying.

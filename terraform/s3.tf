@@ -1,4 +1,4 @@
-# Amazon S3 Bucket for Audio Catalog Assets and Export Packages
+# Amazon S3 bucket for playlist export packages (the catalog ships inside the Lambda package)
 resource "aws_s3_bucket" "audio_assets" {
   bucket        = local.s3_bucket_name
   force_destroy = true # Convenient for dev/testing cleanup
