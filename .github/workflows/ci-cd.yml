@@ -3,6 +3,7 @@ name: CI and AWS Deployment - Audio Architecture System
 permissions:
   contents: read
   id-token: write
+  pages: write
 
 concurrency:
   group: audio-architecture-${{ github.ref }}
@@ -117,7 +118,7 @@ jobs:
     if: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') && vars.AWS_DEPLOY_ENABLED == 'true' }}
     needs: [test-backend, build-frontend, terraform-check]
     runs-on: ubuntu-latest
-    environment: production
+    environment: planning
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
@@ -171,6 +172,8 @@ jobs:
     needs: [plan-aws]
     runs-on: ubuntu-latest
     environment: production
+    outputs:
+      api_url: ${{ steps.infrastructure.outputs.api_url }}
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
@@ -206,27 +209,6 @@ jobs:
         id: infrastructure
         run: |
           echo "api_url=$(terraform -chdir=terraform output -raw api_gateway_endpoint)" >> "$GITHUB_OUTPUT"
-          echo "frontend_bucket=$(terraform -chdir=terraform output -raw frontend_bucket_name)" >> "$GITHUB_OUTPUT"
-          echo "distribution_id=$(terraform -chdir=terraform output -raw frontend_cloudfront_distribution_id)" >> "$GITHUB_OUTPUT"
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-          cache: "npm"
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: Build Frontend for AWS API
-        env:
-          VITE_API_BASE_URL: ${{ steps.infrastructure.outputs.api_url }}
-        run: |
-          npm ci --prefix frontend
-          npm run build --prefix frontend
-
-      - name: Publish Frontend
-        run: |
-          aws s3 sync frontend/dist "s3://${{ steps.infrastructure.outputs.frontend_bucket }}" --delete
-          aws cloudfront create-invalidation --distribution-id "${{ steps.infrastructure.outputs.distribution_id }}" --paths "/*"
 
       - name: Smoke Test Deployed API
         env:
@@ -239,3 +221,40 @@ jobs:
         with:
           name: deployed-verification-results
           path: docs/DEPLOYED_TEST_RESULTS.*
+
+  deploy-pages:
+    name: Publish Frontend to GitHub Pages
+    needs: [deploy-aws]
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Build Frontend for AWS API
+        env:
+          VITE_API_BASE_URL: ${{ needs.deploy-aws.outputs.api_url }}
+        run: |
+          npm ci --prefix frontend
+          npm run build --prefix frontend -- --base=/Audio-Architecture-Playlist-Structuring-API/
+
+      - name: Upload GitHub Pages Artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: frontend/dist
+
+      - name: Deploy GitHub Pages Site
+        id: deployment
+        uses: actions/deploy-pages@v4
