@@ -123,7 +123,7 @@ The system consists of the four modules defined in the project synopsis:
 
 | Synopsis module | Implementation |
 | :--- | :--- |
-| User Interface | React dashboard (`frontend/src/`): duration, genres, preset or custom energy curve, BPM bounds, exclusions, crossfade, scenario starters, custom-track form, history and export dialogs. |
+| User Interface | React dashboard (`frontend/src/`): duration, genres, preset or custom energy curve, BPM bounds, exclusions, crossfade, scenario starters, custom-track form, history and export dialogs. Results (metrics, energy chart, tracklist) appear directly below the builder. |
 | Audio Architecture Engine (API) | Lambda handler (`backend/app/lambda_handler.py`) with request validation and the engine in `backend/app/engine/`. |
 | Data & Storage | `backend/app/storage/`: DynamoDB adapters for playlists and custom tracks, with a local-disk adapter for development. In AWS, storage failures return `503` instead of silently using temporary Lambda disk. |
 | Export & Integration | `backend/app/export/exporters.py`: Extended M3U, JSON and CSV, stored in S3 and returned to the browser. |
@@ -159,6 +159,19 @@ playlist's export file with arbitrary content.
 
 If the API is unreachable, the browser switches to a clearly labeled offline
 mode that uses a simpler greedy optimizer and browser storage.
+
+### Interface design
+
+The dashboard uses a light, print-like "cue sheet" style instead of a dark
+dashboard: a warm paper background, ink text, a single vermillion accent and
+earthy genre colours. Headings use the Fraunces serif, body text Instrument
+Sans and figures JetBrains Mono. Ruled lines separate sections instead of
+cards, and all colours are solid design tokens in `frontend/src/index.css`.
+The builder presents four lettered steps (energy shape, genres, length, fine
+tuning) next to a sticky summary that holds the Generate button. Focus is
+always visible, chart points are keyboard-operable, dialogs trap focus, and
+motion respects reduced-motion settings. At 375 px width the page has no
+horizontal scrolling; the chart and tracklist scroll inside their own areas.
 
 ---
 
@@ -335,7 +348,7 @@ not rendered audio.
 - Formulated the mathematical equations for continuous energy curves \(E(t)\) (Pomodoro, Linear Ascent/Descent, Interval Wave, Steady Flow, Sunset).
 - Developed the Camelot Wheel musical key compatibility engine and cyclic circular distance algorithms.
 - Authored the multi-objective Beam Search optimizer incorporating dynamic duration constraints, tempo Gaussian decay, and genre acoustic bridging.
-- Authored the Python unit testing suite covering curve boundary conditions, optimizer performance, harmonic edge cases, request validation and Lambda import compatibility (41 test cases as of 19 October 2026).
+- Authored the Python unit testing suite covering curve boundary conditions, optimizer performance, harmonic edge cases, request validation, export safety and Lambda import compatibility (43 test cases as of 22 October 2026).
 
 ### Vaibhav Bhatia (Registration No: 240905504)
 - Designed and built the responsive **User Interface Module** using React, Vite, and Tailwind CSS.

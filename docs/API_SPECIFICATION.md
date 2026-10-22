@@ -81,33 +81,34 @@ private audio or personal data.
 ### 2. Supported Genres & Acoustic Profiling
 - **Method:** `GET`
 - **Path:** `/genres`
-- **Response `200 OK`:**
+- **Response `200 OK`** (excerpt; the seeded catalog has seven genres, and
+  custom tracks are included in the counts):
 ```json
 {
   "genres": [
     {
       "name": "Contemporary Classical Piano",
-      "track_count": 8,
-      "min_bpm": 65.0,
-      "max_bpm": 88.0,
-      "avg_bpm": 75.4,
-      "avg_energy": 0.35
-    },
-    {
-      "name": "Indie Pop",
-      "track_count": 8,
-      "min_bpm": 92.0,
-      "max_bpm": 115.0,
-      "avg_bpm": 103.5,
-      "avg_energy": 0.58
+      "track_count": 18,
+      "min_bpm": 62.0,
+      "max_bpm": 90.0,
+      "avg_bpm": 74.8,
+      "avg_energy": 0.32
     },
     {
       "name": "Hip-Hop",
-      "track_count": 8,
-      "min_bpm": 78.0,
-      "max_bpm": 94.0,
-      "avg_bpm": 86.5,
-      "avg_energy": 0.63
+      "track_count": 18,
+      "min_bpm": 72.0,
+      "max_bpm": 98.0,
+      "avg_bpm": 86.1,
+      "avg_energy": 0.6
+    },
+    {
+      "name": "Indie Pop",
+      "track_count": 18,
+      "min_bpm": 89.0,
+      "max_bpm": 118.0,
+      "avg_bpm": 103.0,
+      "avg_energy": 0.57
     }
   ]
 }

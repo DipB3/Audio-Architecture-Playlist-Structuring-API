@@ -160,6 +160,11 @@ def main():
             "Duration error uses seconds. Runtime uses milliseconds and depends on the machine.",
             "The new energy metric integrates three samples per track, so its energy error",
             "is not directly comparable with the original midpoint metric.", "",
+            "Mean duration error across the {} cases: original {:.1f}s, improved {:.1f}s.".format(
+                len(results["benchmark"]),
+                sum(row["original"]["duration_error_seconds"] for row in results["benchmark"]) / len(results["benchmark"]),
+                sum(row["improved"]["duration_error_seconds"] for row in results["benchmark"]) / len(results["benchmark"])),
+            "",
             "| Minutes | Curve | Original duration error | Improved duration error | Original ms | Improved ms |",
             "| --- | --- | ---: | ---: | ---: | ---: |",
         ])

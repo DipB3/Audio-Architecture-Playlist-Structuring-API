@@ -1,5 +1,5 @@
 {
-  "date": "2026-10-18",
+  "date": "2026-10-22",
   "environment": "local",
   "aws_deployment_verified": false,
   "http_smoke": {
@@ -15,7 +15,7 @@
     },
     "diagnostics": {
       "engine": "duration-aware-beam-v2",
-      "execution_ms": 129.31,
+      "execution_ms": 67.32,
       "candidate_evaluations": 5346,
       "eligible_track_count": 54,
       "duration_error_seconds": -3.0,
@@ -436,13 +436,13 @@
       "duration_minutes": 20,
       "curve": "pomodoro_peak",
       "original": {
-        "execution_ms": 3.16,
+        "execution_ms": 1.77,
         "duration_error_seconds": 8,
         "harmonic_percent": 100.0,
         "genre_count": 3
       },
       "improved": {
-        "execution_ms": 35.47,
+        "execution_ms": 19.1,
         "duration_error_seconds": 8,
         "harmonic_percent": 100.0,
         "genre_count": 3
@@ -452,13 +452,13 @@
       "duration_minutes": 20,
       "curve": "linear_ascent",
       "original": {
-        "execution_ms": 3.3,
+        "execution_ms": 1.62,
         "duration_error_seconds": 2,
         "harmonic_percent": 100.0,
         "genre_count": 2
       },
       "improved": {
-        "execution_ms": 31.99,
+        "execution_ms": 15.73,
         "duration_error_seconds": 2,
         "harmonic_percent": 100.0,
         "genre_count": 2
@@ -468,13 +468,13 @@
       "duration_minutes": 20,
       "curve": "wave_interval",
       "original": {
-        "execution_ms": 2.95,
+        "execution_ms": 1.66,
         "duration_error_seconds": 43,
         "harmonic_percent": 100.0,
         "genre_count": 3
       },
       "improved": {
-        "execution_ms": 37.77,
+        "execution_ms": 23.43,
         "duration_error_seconds": 2,
         "harmonic_percent": 100.0,
         "genre_count": 3
@@ -484,13 +484,13 @@
       "duration_minutes": 45,
       "curve": "pomodoro_peak",
       "original": {
-        "execution_ms": 6.03,
+        "execution_ms": 3.04,
         "duration_error_seconds": 21,
         "harmonic_percent": 100.0,
         "genre_count": 3
       },
       "improved": {
-        "execution_ms": 56.33,
+        "execution_ms": 29.95,
         "duration_error_seconds": 4,
         "harmonic_percent": 100.0,
         "genre_count": 3
@@ -500,13 +500,13 @@
       "duration_minutes": 45,
       "curve": "linear_ascent",
       "original": {
-        "execution_ms": 5.33,
+        "execution_ms": 3.04,
         "duration_error_seconds": 39,
         "harmonic_percent": 100.0,
         "genre_count": 3
       },
       "improved": {
-        "execution_ms": 40.65,
+        "execution_ms": 22.38,
         "duration_error_seconds": 1,
         "harmonic_percent": 100.0,
         "genre_count": 3
@@ -516,13 +516,13 @@
       "duration_minutes": 45,
       "curve": "wave_interval",
       "original": {
-        "execution_ms": 5.76,
+        "execution_ms": 2.97,
         "duration_error_seconds": 12,
         "harmonic_percent": 100.0,
         "genre_count": 3
       },
       "improved": {
-        "execution_ms": 54.23,
+        "execution_ms": 31.04,
         "duration_error_seconds": 25,
         "harmonic_percent": 100.0,
         "genre_count": 3
@@ -532,13 +532,13 @@
       "duration_minutes": 90,
       "curve": "pomodoro_peak",
       "original": {
-        "execution_ms": 8.41,
+        "execution_ms": 4.67,
         "duration_error_seconds": 81,
         "harmonic_percent": 96.0,
         "genre_count": 3
       },
       "improved": {
-        "execution_ms": 110.41,
+        "execution_ms": 63.89,
         "duration_error_seconds": 4,
         "harmonic_percent": 96.0,
         "genre_count": 3
@@ -548,13 +548,13 @@
       "duration_minutes": 90,
       "curve": "linear_ascent",
       "original": {
-        "execution_ms": 9.26,
+        "execution_ms": 6.74,
         "duration_error_seconds": 3,
         "harmonic_percent": 96.0,
         "genre_count": 3
       },
       "improved": {
-        "execution_ms": 100.25,
+        "execution_ms": 51.4,
         "duration_error_seconds": 8,
         "harmonic_percent": 96.0,
         "genre_count": 3
@@ -564,13 +564,13 @@
       "duration_minutes": 90,
       "curve": "wave_interval",
       "original": {
-        "execution_ms": 8.6,
+        "execution_ms": 4.81,
         "duration_error_seconds": 4,
         "harmonic_percent": 96.0,
         "genre_count": 3
       },
       "improved": {
-        "execution_ms": 121.78,
+        "execution_ms": 65.78,
         "duration_error_seconds": 4,
         "harmonic_percent": 96.0,
         "genre_count": 3
@@ -580,13 +580,13 @@
       "duration_minutes": 180,
       "curve": "pomodoro_peak",
       "original": {
-        "execution_ms": 22.65,
+        "execution_ms": 12.65,
         "duration_error_seconds": 5,
         "harmonic_percent": 100.0,
         "genre_count": 3
       },
       "improved": {
-        "execution_ms": 356.21,
+        "execution_ms": 176.98,
         "duration_error_seconds": 8,
         "harmonic_percent": 100.0,
         "genre_count": 3
@@ -596,13 +596,13 @@
       "duration_minutes": 180,
       "curve": "linear_ascent",
       "original": {
-        "execution_ms": 24.32,
+        "execution_ms": 13.08,
         "duration_error_seconds": 91,
         "harmonic_percent": 100.0,
         "genre_count": 3
       },
       "improved": {
-        "execution_ms": 314.09,
+        "execution_ms": 159.91,
         "duration_error_seconds": 5,
         "harmonic_percent": 100.0,
         "genre_count": 3
@@ -612,13 +612,13 @@
       "duration_minutes": 180,
       "curve": "wave_interval",
       "original": {
-        "execution_ms": 30.65,
+        "execution_ms": 12.85,
         "duration_error_seconds": 40,
         "harmonic_percent": 100.0,
         "genre_count": 3
       },
       "improved": {
-        "execution_ms": 465.35,
+        "execution_ms": 196.58,
         "duration_error_seconds": 9,
         "harmonic_percent": 98.04,
         "genre_count": 3

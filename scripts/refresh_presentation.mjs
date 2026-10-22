@@ -16,12 +16,12 @@ const average = label => evidence.benchmark.reduce((sum, row) => sum + row[label
 const bodies = [
   null,
   null,
-  'React builder captures duration, genres, and custom track metadata.\nPython API sequences tracks by energy, BPM, and Camelot compatibility.\nLocal storage keeps playlists; Terraform defines two DynamoDB tables.\nExtended M3U, JSON, and CSV exports contain tracklist metadata.',
+  'React builder captures duration, genres, energy shape and custom tracks.\nPython API sequences tracks by energy, BPM, and Camelot compatibility.\nLocal storage keeps playlists; Terraform defines two DynamoDB tables.\nM3U, JSON and CSV exports are built only from stored playlists.',
   null,
   '118 fictional demo tracks across seven genres.\nFour scenario starters exercise focus, movement, evening, and mixed sessions.\nUsers can add metadata-only songs and exclude catalog tracks.\nRepeat, BPM, genre variety, and planned crossfade remain adjustable.',
-  'Terraform defines CloudFront, private S3, API Gateway, Lambda, and DynamoDB.\nGitHub Actions runs tests and Terraform checks on each push.\nAWS deployment is gated until the account, OIDC role, and state bucket are ready.',
-  `41 backend tests pass. Frontend lint and build pass.\nLocal HTTP custom-track CRUD, generation, history, and exports pass.\nAcross 12 historical 48-track cases, mean duration error changed from ${average('original').toFixed(1)}s to ${average('improved').toFixed(1)}s.\nThe wider search costs more CPU time than the original engine.`,
-  'Demo: choose a scenario, generate, inspect trajectory and transitions.\nAdd custom song metadata and try another session.\nReload history and export the tracklist.\nAWS deployment remains pending account setup and CI validation.'
+  'Terraform defines CloudFront, private S3, API Gateway, Lambda, and DynamoDB.\nGitHub Actions tests every push; API Gateway throttles to 5 req/s.\nGated deploy: approve the Terraform plan, then approve its apply.',
+  `43 backend tests pass. Frontend lint and build pass.\nLocal HTTP custom-track CRUD, generation, history, and exports pass.\nAcross 12 historical 48-track cases, mean duration error changed from ${average('original').toFixed(1)}s to ${average('improved').toFixed(1)}s.\nThe wider search costs more CPU time than the original engine.`,
+  'Demo: choose a scenario, generate, inspect trajectory and transitions.\nAdd custom song metadata and try another session.\nReload history and export the tracklist.\nCI checks pass; AWS deployment remains pending account setup.'
 ];
 const titles = { 5: 'Catalog and session controls', 6: 'Cloud architecture and release gate' };
 const inspection = await deck.inspect({ select: '$.slides[*]', include: ['id', 'index', 'elements.id', 'elements.text'], fileName: path.join(build, 'source-inspect.ndjson') });
@@ -33,7 +33,7 @@ for (const slide of deck.slides.items) {
   const [titleShape, bodyShape] = shapes;
   if (titles[index + 1]) titleShape.text = titles[index + 1];
   if (bodies[index]) bodyShape.text = bodies[index];
-  slide.speakerNotes.text = 'Source: repository implementation and docs/TEST_RESULTS.json, verified locally 19 October 2026. The 12-case engine comparison uses the original 48-track catalog. No AWS deployment has been verified. Custom tracks contain metadata only; M3U exports need user-supplied audio files.';
+  slide.speakerNotes.text = 'Source: repository implementation and docs/TEST_RESULTS.json, verified locally 22 October 2026. The 12-case engine comparison uses the original 48-track catalog. No AWS deployment has been verified. Custom tracks contain metadata only; M3U exports need user-supplied audio files.';
   await fs.writeFile(path.join(build, `slide-${index + 1}.png`),
     new Uint8Array(await (await deck.export({ slide, format: 'png', scale: 1 })).arrayBuffer()));
 }

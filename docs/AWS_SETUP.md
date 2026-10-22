@@ -24,7 +24,8 @@ skips its AWS job until the repository variable `AWS_DEPLOY_ENABLED` is `true`.
    deployment branches to `main` and set required reviewers. Add the role ARN as
    environment secret `AWS_DEPLOY_ROLE_ARN` and the state bucket name as
    environment secret `TF_STATE_BUCKET`. No long-lived AWS keys are needed.
-5. Review the budget email recipients in `terraform/variables.tf`. Set the
+5. Review the budget email recipients and the API throttling limits
+   (`api_throttle_rate_limit`, `api_throttle_burst_limit`) in `terraform/variables.tf`. Set the
    repository variable `AWS_DEPLOY_ENABLED` to `true`. On the Actions page, run
    **CI and AWS Deployment - Audio Architecture System** on `main`. After CI
    passes, approve `production` for **Plan AWS Infrastructure**, read the

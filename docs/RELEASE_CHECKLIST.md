@@ -1,14 +1,17 @@
 # Release and Presentation Checklist
 
 The four synopsis modules, presentation and measured test report are included.
-Engine constraints, custom-track CRUD, HTTP integration, browser generation,
-frontend lint/build passed locally. GitHub CI validated the updated Terraform
-configuration on commit `1ea734d`; an AWS deployment is still required before
-claiming a live release.
+On 22 October 2026, 43 backend tests, HTTP integration, frontend service tests,
+lint/build and a browser check of the redesigned interface passed locally.
+GitHub CI run #7 on commit `187b784` (export hardening, API throttling,
+two-stage deployment, interface redesign) passed the backend, frontend and
+Terraform jobs; the AWS jobs were skipped by the deployment gate. An AWS
+deployment is required before claiming a live release.
 
 ## Account setup and release evidence
 
-1. Repository source is pushed to `main` at
+1. Confirm the backend, frontend and Terraform CI jobs pass on `main`.
+   Repository source lives on `main` at
    `https://github.com/VaibhavBhatia-0/Audio-Architecture-Playlist-Structuring-API`.
 2. Create an encrypted, versioned Terraform state bucket.
 3. Configure GitHub OIDC, an IAM deployment role and the production environment.
@@ -27,9 +30,11 @@ Follow [AWS setup](AWS_SETUP.md) for the exact account inputs and release sequen
 
 ## Demo
 
-Choose a 30-minute session and custom curve. Set genres and BPM bounds.
-Exclude a track, generate, inspect fit and transitions, reload the saved session
-and export M3U, JSON and CSV. Explain that previews synthesize motifs and M3U
-references require supplied recordings.
+Start from a scenario in the numbered list, then switch to the custom curve and
+show its live shape preview. Set genres and BPM bounds; the Cue sheet column
+summarizes the session.
+Exclude a track, generate, inspect the fit metrics, chart and transitions, reload
+the saved session from History and export M3U, JSON and CSV. Explain that
+previews synthesize motifs and M3U references require supplied recordings.
 Then add a fictional custom song, select its genre, generate a second session,
 and remove it from the live catalog. Saved playlists retain their snapshots.
