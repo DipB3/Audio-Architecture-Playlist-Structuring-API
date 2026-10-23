@@ -1,0 +1,115 @@
+name: Destroy AWS Deployment - Audio Architecture
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Type DESTROY to remove the project AWS resources
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: audio-architecture-aws-destroy
+  cancel-in-progress: false
+
+jobs:
+  plan-destroy:
+    name: Plan AWS Destruction
+    if: ${{ github.event.inputs.confirmation == 'DESTROY' }}
+    runs-on: ubuntu-latest
+    environment: planning
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.7.0"
+          terraform_wrapper: false
+
+      - name: Create Destruction Plan
+        run: |
+          terraform -chdir=terraform init -input=false \
+            -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
+            -backend-config="key=audio-architecture/terraform.tfstate" \
+            -backend-config="region=us-east-1" \
+            -backend-config="encrypt=true"
+          terraform -chdir=terraform plan -destroy -input=false -out=destroy.tfplan
+          terraform -chdir=terraform show -no-color destroy.tfplan > terraform/destroy.tfplan.txt
+
+      - name: Publish Destruction Plan
+        run: |
+          {
+            echo "## AWS destruction plan"
+            echo "This plan targets only resources tracked in audio-architecture/terraform.tfstate."
+            echo '```'
+            head -c 900000 terraform/destroy.tfplan.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Saved Destruction Plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-destroy-plan
+          retention-days: 1
+          path: |
+            terraform/destroy.tfplan
+            terraform/destroy.tfplan.txt
+
+  apply-destroy:
+    name: Apply Reviewed Destruction Plan
+    needs: [plan-destroy]
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Download Saved Destruction Plan
+        uses: actions/download-artifact@v4
+        with:
+          name: terraform-destroy-plan
+          path: terraform
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.7.0"
+          terraform_wrapper: false
+
+      - name: Apply Destruction Plan
+        run: |
+          terraform -chdir=terraform init -input=false \
+            -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
+            -backend-config="key=audio-architecture/terraform.tfstate" \
+            -backend-config="region=us-east-1" \
+            -backend-config="encrypt=true"
+          terraform -chdir=terraform apply -input=false destroy.tfplan
+
+      - name: Verify Terraform State Is Empty
+        run: |
+          remaining="$(terraform -chdir=terraform state list)"
+          if [ -n "$remaining" ]; then
+            echo "Resources remain in Terraform state:"
+            echo "$remaining"
+            exit 1
+          fi
+          echo "## AWS teardown completed" >> "$GITHUB_STEP_SUMMARY"
+          echo "Terraform state is empty. The bootstrap state bucket and GitHub deployment role must be removed separately." >> "$GITHUB_STEP_SUMMARY"
